@@ -29,6 +29,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            position: absolute; 
+            cursor: pointer;
         }
         .echo-node.small { --echo-scale: 0.7; width: 48px; height: 48px; } 
         .echo-node.medium { --echo-scale: 1; width: 64px; height: 64px; } 
@@ -50,17 +52,79 @@
             object-fit: cover;
             border-radius: 50%; 
         }
+        .echo-title-hover { 
+            position: absolute;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            font-size: 0.75rem; 
+            padding: 0.25rem 0.5rem; 
+            border-radius: 0.375rem; 
+            bottom: -2.2rem; 
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            white-space: nowrap;
+            pointer-events: none; 
+        }
+        .echo-node:hover .echo-title-hover {
+            opacity: 1;
+        }
+        
+        .memory-detail-overlay-content {
+            max-width: 90%;
+            max-height: 90vh; 
+            overflow-y: hidden; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        @media (min-width: 768px) {
+            .memory-detail-overlay-content { max-width: 800px; flex-direction: row; }
+        }
+        .echo-detail-text-container { 
+            flex-grow: 1;
+            overflow-y: auto; 
+            padding-right: 10px; 
+            max-height: calc(90vh - 150px); /* Adjust based on other elements in overlay */
+        }
+        @media (min-width: 768px) {
+            .echo-detail-text-container { max-height: calc(90vh - 80px); } /* Adjust for row layout */
+        }
+
+        #detail-desc {
+            transition: max-height 0.4s ease-in-out;
+            overflow: hidden;
+        }
+        #detail-desc.collapsed {
+            max-height: 4.5em; /* Approx 3 lines, adjust as needed */
+            position: relative;
+        }
+        #detail-desc.collapsed::after { 
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1.5em; /* Height of the fade */
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,1) 90%);
+        }
+        #detail-desc.expanded {
+            max-height: none; /* Allow full content height */
+        }
+        #detail-desc.expanded::after {
+            display: none;
+        }
 
 
-        .memory-detail-overlay-content, .add-memory-modal-content {
+        .add-memory-modal-content {
             max-width: 90%;
             max-height: 90vh;
             overflow-y: auto;
         }
         @media (min-width: 768px) {
-            .memory-detail-overlay-content { max-width: 800px; }
-            .add-memory-modal-content { max-width: 550px; }
+             .add-memory-modal-content { max-width: 550px; }
         }
+
         .spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
             width: 24px;
@@ -228,14 +292,14 @@
 
 
         #main-content-area { 
-            position: relative;
+            position: relative; 
             width: 100%;
             min-height: 100vh; 
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column; 
+            padding-top: 20px; 
             padding-left: 220px; 
-            transition: padding-left 0.3s ease-in-out, opacity 0.5s ease-in-out;
+            transition: padding-left 0.3s ease-in-out;
         }
         #detailed-profile-view { 
              position: relative;
@@ -260,14 +324,14 @@
         .alternative-view-content-wrapper {
             width: 100%;
             max-width: 900px;
-            margin: 2rem auto; 
-            padding: 2rem;
+            margin: 1rem auto; 
+            padding: 1.5rem; 
             background-color: rgba(255, 255, 255, 0.1); 
             backdrop-filter: blur(8px);
             border-radius: 16px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.2);
             color: #e0e7ff; 
-            max-height: calc(100vh - 120px); 
+            max-height: calc(100vh - 200px); 
             overflow-y: auto;
         }
         .alternative-view-content-wrapper h2 {
@@ -421,12 +485,27 @@
 
         .central-portrait-frame { 
             position: relative; 
+            margin: 0 auto 2rem auto; 
             background-color: rgba(255, 255, 255, 0.1); 
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.2);
             color: #e0e7ff; 
-            transition: width 0.3s ease-in-out, min-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+            transition: width 0.3s ease-in-out, min-height 0.3s ease-in-out, padding 0.3s ease-in-out, margin 0.3s ease-in-out;
+            z-index: 20; 
         }
+         
+        #main-content-area.alternative-view-active .central-portrait-frame {
+            position: fixed; 
+            top: 1rem;
+            left: calc(var(--sidebar-width, 220px) + 1rem); 
+            margin: 0;
+            z-index: 30; 
+        }
+         #main-content-area.alternative-view-active.sidebar-collapsed .central-portrait-frame {
+            left: calc(70px + 1rem); 
+        }
+
+
         .central-portrait-frame h1, .central-portrait-frame p {
             color: #e0e7ff; 
             transition: font-size 0.3s ease-in-out, opacity 0.3s ease-in-out;
@@ -437,17 +516,17 @@
         
         /* Minimal View for Central Portrait */
         .central-portrait-frame.is-minimal {
-            width: 180px !important; /* Adjusted for better fit */
+            width: 180px !important; 
             min-height: auto !important;
-            padding: 0.75rem !important; /* p-3 */
+            padding: 0.75rem !important; 
         }
         .central-portrait-frame.is-minimal #central-portrait-img {
-            width: 64px !important; /* w-16 */
-            height: 64px !important; /* h-16 */
-            margin-bottom: 0.5rem !important; /* mb-2 */
+            width: 64px !important; 
+            height: 64px !important; 
+            margin-bottom: 0.5rem !important; 
         }
         .central-portrait-frame.is-minimal #central-portrait-name {
-            font-size: 1.25rem !important; /* text-xl */
+            font-size: 1.25rem !important; 
             margin-bottom: 0 !important;
         }
         .central-portrait-frame.is-minimal .portrait-date,
@@ -457,7 +536,7 @@
         }
 
 
-        #card-view-toggle-btn { /* Renamed from expand-icon-btn */
+        #card-view-toggle-btn { 
             position: absolute;
             top: 1rem; 
             right: 1rem; 
@@ -473,23 +552,22 @@
             background-color: rgba(0, 0, 0, 0.5); 
             color: #ffffff; 
         }
-        .echo-title { 
-            position: absolute;
-            background-color: rgba(0,0,0,0.7);
-            color: white;
-            font-size: 0.75rem; 
-            padding: 0.25rem 0.5rem; 
-            border-radius: 0.375rem; 
-            bottom: -2rem; 
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.2s ease-in-out;
-            white-space: nowrap;
+        
+        #echo-constellation-container { 
+            position: absolute; 
+            top: 0;
+            left: 0; 
+            right: 0;
+            bottom: 0;
+            width: 100%; 
+            height: 100%; 
             pointer-events: none; 
+            z-index: 10; 
         }
-        .echo-node:hover .echo-title {
-            opacity: 1;
+        #echo-constellation { 
+            position: relative; 
+            width: 100%; 
+            height: 100%;
         }
 
 
@@ -519,7 +597,7 @@
     </aside>
 
     <main id="main-content-area">
-        <div class="central-portrait-frame absolute z-20 flex flex-col items-center justify-center rounded-3xl p-8 shadow-2xl transition-all duration-500 ease-in-out transform hover:scale-105"
+        <div class="central-portrait-frame flex flex-col items-center justify-center rounded-3xl p-8 shadow-2xl transition-all duration-500 ease-in-out transform hover:scale-105"
              style="width: 320px; min-height: 420px;"> 
             <button id="card-view-toggle-btn" title="Minimize Card"> <i class="fas fa-chevron-down"></i> </button>
             <img id="central-portrait-img" src="https://placehold.co/120x120/a7d9e7/1E3A8A?text=H" alt="Hoowoz's Portrait" class="w-32 h-32 rounded-full object-cover mb-4 ring-4 ring-blue-300 ring-opacity-75 shadow-lg">
@@ -534,29 +612,11 @@
                 <i class="fas fa-play-circle"></i>
                 <span>Play Audio Summary</span>
             </button>
-            </div>
+        </div>
 
-        <div id="echo-constellation" class="absolute w-full h-full pointer-events-none">
-            <div class="echo-node small group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto" style="top: 20%; left: 15%;" data-type="photo" data-title="Grandma's 80th Birthday" data-src="https://placehold.co/400x300/e0e7ff/333333?text=Echo+Photo+1" data-desc="A cherished memory from Grandma's 80th birthday celebration..." data-contributor="Shared by: Sarah (Daughter)" data-date="August 15, 2023">
-                <img src="https://placehold.co/60x60/e0e7ff/333333?text=P1" alt="Echo Thumbnail" class="echo-thumbnail-img">
-                <span class="echo-title">Grandma's 80th</span>
-            </div>
-            <div class="echo-node medium group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto" style="top: 30%; left: 80%;" data-type="video" data-title="Our Trip to Italy" data-src="https://placehold.co/400x300/ffe0e0/333333?text=Echo+Video+1" data-desc="Unforgettable adventures in Italy..." data-contributor="Shared by: David (Friend)" data-date="June 2, 2022">
-                <i class="fas fa-play text-red-700 echo-thumbnail-icon"></i>
-                <span class="echo-title">Trip to Italy</span>
-            </div>
-            <div class="echo-node large group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto" style="top: 75%; left: 25%;" data-type="audio" data-title="Dad's Favorite Joke" data-src="https://placehold.co/400x300/e0ffea/333333?text=Echo+Audio+1" data-desc="Recording of Dad telling his favorite joke..." data-contributor="Shared by: Emily (Daughter)" data-date="December 24, 2021">
-                 <i class="fas fa-volume-up text-green-700 echo-thumbnail-icon"></i>
-                <span class="echo-title">Dad's Joke</span>
-            </div>
-            <div class="echo-node medium group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto" style="top: 60%; left: 70%;" data-type="text" data-title="First Day of School" data-src="https://placehold.co/400x300/fffbe0/333333?text=Echo+Text+1" data-desc="A vivid recollection of their first day of school..." data-contributor="Shared by: Alex (Sibling)" data-date="September 1, 1955">
-                <i class="fas fa-feather-alt text-yellow-700 echo-thumbnail-icon"></i>
-                <span class="echo-title">First Day of School</span>
-            </div>
-             <div class="echo-node small group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto" style="top: 15%; left: 50%;" data-type="photo" data-title="Gardening Hobby" data-src="https://placehold.co/400x300/f5e1f4/333333?text=Garden" data-desc="Hoowoz's beautiful rose garden, a testament to their patience and love for nature." data-contributor="Shared by: Neighbor" data-date="Spring 2020">
-                <img src="https://placehold.co/60x60/f5e1f4/333333?text=Garden" alt="Echo Thumbnail" class="echo-thumbnail-img">
-                <span class="echo-title">Rose Garden</span>
-            </div>
+        <div id="echo-constellation-container">
+            <div id="echo-constellation">
+                </div>
         </div>
         
         <div id="timeline-view-placeholder" class="alternative-view-placeholder" style="display: none;"></div>
@@ -587,14 +647,15 @@
     </div>
 
     <div id="memory-detail-overlay" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden p-4">
-        <div class="memory-detail-overlay-content bg-white rounded-xl shadow-2xl p-8 relative flex flex-col md:flex-row gap-6">
+        <div class="memory-detail-overlay-content bg-white rounded-xl shadow-2xl p-8 relative">
             <button id="close-memory-detail" class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl"><i class="fas fa-times-circle"></i></button>
-            <div id="detail-media-container" class="flex-shrink-0 w-full md:w-1/2 flex items-center justify-center">
+            <div id="detail-media-container" class="flex-shrink-0 w-full md:w-1/2 flex items-center justify-center mb-4 md:mb-0 md:mr-6">
                  <img id="detail-media-img" src="" alt="Echo Media" class="rounded-lg object-contain max-h-96 w-full">
             </div>
-            <div class="flex-grow text-gray-800">
+            <div class="echo-detail-text-container"> 
                 <h2 id="detail-title" class="text-3xl font-bold mb-3"></h2>
-                <p id="detail-desc" class="text-md leading-relaxed mb-4"></p>
+                <p id="detail-desc" class="text-md leading-relaxed mb-2 collapsed"></p> 
+                <button id="toggle-echo-content-btn" class="text-blue-600 hover:text-blue-800 text-sm font-semibold mb-3">Read More</button>
                 <div id="elaborated-story-output" class="w-full mt-3 text-sm"></div>
                 <button id="elaborate-story-btn" class="mt-2 mb-4 px-4 py-2 bg-teal-500 text-white rounded-full shadow-md hover:bg-teal-600 transition-colors duration-200 flex items-center space-x-2"><i class="fas fa-book-reader"></i><span>✨ Lumin, Elaborate</span></button>
                 <p id="detail-contributor" class="text-sm text-gray-600 mb-1"></p>
@@ -649,8 +710,6 @@
             const centralPortraitName = document.getElementById('central-portrait-name');
 
             const mainBio = document.getElementById('main-bio')?.textContent; 
-            const elaborateStoryBtn = document.getElementById('elaborate-story-btn');
-            const elaboratedStoryOutput = document.getElementById('elaborated-story-output');
             const detailOverlay = document.getElementById('memory-detail-overlay');
             const closeDetailButton = document.getElementById('close-memory-detail');
             
@@ -659,6 +718,9 @@
 
             const detailTitle = document.getElementById('detail-title');
             const detailDesc = document.getElementById('detail-desc');
+            const toggleEchoContentBtn = document.getElementById('toggle-echo-content-btn');
+            const elaboratedStoryOutput = document.getElementById('elaborated-story-output');
+            const elaborateStoryBtn = document.getElementById('elaborate-story-btn');
             const detailContributor = document.getElementById('detail-contributor');
             const detailDate = document.getElementById('detail-date');
             const messageModal = document.getElementById('message-modal');
@@ -683,6 +745,7 @@
             const sidebarToggleBtn = document.getElementById('browse-sidebar-toggle');
             const mainContentArea = document.getElementById('main-content-area');
             const echoConstellationView = document.getElementById('echo-constellation'); 
+            const echoConstellationContainer = document.getElementById('echo-constellation-container');
             
             const timelineViewPlaceholder = document.getElementById('timeline-view-placeholder'); 
             const contributorsViewPlaceholder = document.getElementById('contributors-view-placeholder'); 
@@ -702,7 +765,8 @@
             const backToHoowozBtn = document.getElementById('back-to-hoowoz-btn'); 
             const detailedTimelineItemsContainer = document.getElementById('detailed-timeline-items');
 
-            let currentCentralCardState = 'short'; // 'short', 'minimal', 'full' (when on detailed page)
+            let currentCentralCardState = 'short'; 
+            let previousCentralCardStateBeforeEchoOpen = 'short';
 
 
             let currentStep = 0;
@@ -818,9 +882,9 @@
                     }
                 },
                 { 
-                    id: 'memoryTitle', // ID for the step configuration
+                    id: 'memoryTitle', 
                     aiPrompt: () => createAIPrompt("<strong>Lumin:</strong> We're nearly there. How would you like to title this echo for Hoowoz?"),
-                    input: () => createTextInput('memoryTitle', 'e.g., Beach Trip in July, Kind Words', newMemoryData.memoryTitle || ''), // ID for the input element
+                    input: () => createTextInput('memoryTitle', 'e.g., Beach Trip in July, Kind Words', newMemoryData.memoryTitle || ''), 
                     validate: (inputEl) => inputEl && inputEl.value.trim() !== '',
                     onNext: (inputEl) => { 
                         newMemoryData.memoryTitle = inputEl.value; 
@@ -1066,47 +1130,70 @@
             if(closeAddMemoryModalBtn) closeAddMemoryModalBtn.addEventListener('click', () => addMemoryModal.classList.add('hidden'));
             if(nextStepBtn) nextStepBtn.addEventListener('click', handleNextStep);
             if(prevStepBtn) prevStepBtn.addEventListener('click', handlePrevStep);
+            
+            function createEchoNodeDOM(echoData) {
+                const newEchoNode = document.createElement('div');
+                const sizes = ['small', 'medium', 'large'];
+                const randomSize = echoData.size || sizes[Math.floor(Math.random() * sizes.length)];
+                newEchoNode.className = `echo-node ${randomSize} group pointer-events-auto`;
+                
+                const maxLeft = mainContentArea.classList.contains('sidebar-collapsed') ? 90 : 80; 
+                const top = echoData.top || (Math.random() * 85 + 5) + '%'; 
+                const left = echoData.left || (Math.random() * maxLeft + 5) + '%';  
+                
+                newEchoNode.style.top = top;
+                newEchoNode.style.left = left;
+                
+                newEchoNode.dataset.title = echoData.title;
+                newEchoNode.dataset.desc = echoData.description;
+                newEchoNode.dataset.contributor = echoData.contributor;
+                newEchoNode.dataset.date = echoData.date;
+                
+                let thumbnailContent = '';
+                if (echoData.mediaType && echoData.mediaType.startsWith('image/')) {
+                    newEchoNode.dataset.type = 'photo'; newEchoNode.dataset.src = echoData.mediaSrc;
+                    thumbnailContent = `<img src="${echoData.mediaSrc}" alt="Echo Thumbnail" class="echo-thumbnail-img">`;
+                } else if (echoData.mediaType && echoData.mediaType.startsWith('video/')) {
+                    newEchoNode.dataset.type = 'video'; newEchoNode.dataset.src = echoData.mediaSrc;
+                    thumbnailContent = `<i class="fas fa-play text-blue-300 echo-thumbnail-icon"></i>`;
+                } else if (echoData.mediaType && echoData.mediaType.startsWith('audio/')) {
+                    newEchoNode.dataset.type = 'audio'; newEchoNode.dataset.src = echoData.mediaSrc;
+                    thumbnailContent = `<i class="fas fa-volume-up text-green-300 echo-thumbnail-icon"></i>`;
+                } else { 
+                    newEchoNode.dataset.type = 'text'; 
+                    newEchoNode.dataset.src = `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(echoData.title.substring(0,20))}`; 
+                    const iconClass = echoData.type === 'condolence' ? 'fa-comment-alt' : 'fa-feather-alt'; 
+                    thumbnailContent = `<i class="fas ${iconClass} text-purple-300 echo-thumbnail-icon"></i>`;
+                }
+                // Removed the local expand/collapse button and preview div from here
+                newEchoNode.innerHTML = `
+                    ${thumbnailContent}
+                    <span class="echo-title-hover">${echoData.title}</span>
+                `;
+                return newEchoNode;
+            }
+
             if(saveMemoryBtn) {
                 saveMemoryBtn.addEventListener('click', () => {
                     if (!newMemoryData.userName || !newMemoryData.memoryTitle || !newMemoryData.memoryDescription) {
                          showMessage("Incomplete Echo", "Lumin needs a Name, Title, and Description for your echo. Please review.");
                          return;
                     }
-                    const newEchoNode = document.createElement('div');
-                    const sizes = ['small', 'medium', 'large'];
-                    const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
-                    newEchoNode.className = `echo-node ${randomSize} group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto`;
-                    
-                    const top = Math.random() * 70 + 15; 
-                    const left = Math.random() * 70 + 15;
-                    newEchoNode.style.top = `${top}%`;
-                    newEchoNode.style.left = `${left}%`;
-                    
-                    newEchoNode.dataset.title = newMemoryData.memoryTitle;
-                    newEchoNode.dataset.desc = newMemoryData.memoryDescription;
-                    newEchoNode.dataset.contributor = `Shared by: ${newMemoryData.userName} (${newMemoryData.relationship || 'N/A'})`;
-                    newEchoNode.dataset.date = newMemoryData.memoryWhen || new Date().toLocaleDateString();
-                    
-                    let thumbnailContent = '';
-                    if (newMemoryData.memoryMediaType && newMemoryData.memoryMediaType.startsWith('image/')) {
-                        newEchoNode.dataset.type = 'photo'; newEchoNode.dataset.src = newMemoryData.memoryMedia;
-                        thumbnailContent = `<img src="${newMemoryData.memoryMedia}" alt="Echo Thumbnail" class="echo-thumbnail-img">`;
-                    } else if (newMemoryData.memoryMediaType && newMemoryData.memoryMediaType.startsWith('video/')) {
-                        newEchoNode.dataset.type = 'video'; newEchoNode.dataset.src = newMemoryData.memoryMedia;
-                        thumbnailContent = `<i class="fas fa-play text-blue-300 echo-thumbnail-icon"></i>`;
-                    } else if (newMemoryData.memoryMediaType && newMemoryData.memoryMediaType.startsWith('audio/')) {
-                        newEchoNode.dataset.type = 'audio'; newEchoNode.dataset.src = newMemoryData.memoryMedia;
-                        thumbnailContent = `<i class="fas fa-volume-up text-green-300 echo-thumbnail-icon"></i>`;
-                    } else { 
-                        newEchoNode.dataset.type = 'text'; 
-                        newEchoNode.dataset.src = `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(newMemoryData.memoryTitle.substring(0,20))}`; 
-                        const iconClass = newMemoryData.memoryType === 'condolence' ? 'fa-comment-alt' : 'fa-feather-alt'; 
-                        thumbnailContent = `<i class="fas ${iconClass} text-purple-300 echo-thumbnail-icon"></i>`;
-                    }
-                    newEchoNode.innerHTML = `${thumbnailContent}<span class="echo-title">${newMemoryData.memoryTitle}</span>`;
-                    
+                    const echoDataForNode = {
+                        title: newMemoryData.memoryTitle,
+                        description: newMemoryData.memoryDescription,
+                        contributor: `Shared by: ${newMemoryData.userName} (${newMemoryData.relationship || 'N/A'})`,
+                        date: newMemoryData.memoryWhen || new Date().toLocaleDateString(),
+                        mediaType: newMemoryData.memoryMediaType,
+                        mediaSrc: newMemoryData.memoryMedia,
+                        type: newMemoryData.memoryType 
+                    };
+
+                    const newEchoNode = createEchoNodeDOM(echoDataForNode);
+                                        
                     if(echoConstellationView) echoConstellationView.appendChild(newEchoNode);
                     setupEchoNodeClickListener(newEchoNode); 
+                    // No longer need setupEchoExpandCollapseListeners(newEchoNode);
                     
                     showMessage("Echo Saved", `Thank you, ${newMemoryData.userName}. Lumin has carefully preserved your echo: "${newMemoryData.memoryTitle}".`);
                     if(addMemoryModal) addMemoryModal.classList.add('hidden');
@@ -1238,6 +1325,8 @@
                     sidebar.classList.toggle('collapsed');
                     mainContentArea.classList.toggle('sidebar-collapsed');
                     detailedProfileView.classList.toggle('sidebar-collapsed'); 
+                    document.documentElement.style.setProperty('--sidebar-width', sidebar.classList.contains('collapsed') ? '70px' : '220px');
+
                     const icon = sidebarToggleBtn.querySelector('i');
                     if (sidebar.classList.contains('collapsed')) {
                         icon.classList.remove('fa-angle-double-left');
@@ -1255,24 +1344,41 @@
                 allViewButtons.forEach(btn => btn.classList.remove('active-view'));
                 if(activeButton) activeButton.classList.add('active-view');
                 
+                if(echoConstellationContainer) echoConstellationContainer.style.display = 'none'; 
                 if(echoConstellationView) {
                     echoConstellationView.style.display = 'none'; 
                     document.querySelectorAll('.echo-node').forEach(node => node.style.opacity = '0');
                 }
                 allAlternativePlaceholders.forEach(view => { if(view) view.style.display = 'none';});
                 if(detailedProfileView) detailedProfileView.style.display = 'none';
-                if(mainContentArea) mainContentArea.style.display = 'flex'; 
+                if(mainContentArea) mainContentArea.classList.remove('alternative-view-active');
+
 
                 const echosData = getAllEchosData();
 
                 if (activeViewElement === echoConstellationView) {
+                    if(echoConstellationContainer) echoConstellationContainer.style.display = 'block';
                     if(echoConstellationView) {
                         echoConstellationView.style.display = 'block'; 
                         document.querySelectorAll('.echo-node').forEach(node => node.style.opacity = '1');
                     }
-                     if(centralPortraitFrame) centralPortraitFrame.style.display = 'flex'; 
+                     if(centralPortraitFrame) {
+                        centralPortraitFrame.style.display = 'flex'; 
+                        centralPortraitFrame.classList.remove('is-minimal');
+                        centralPortraitFrame.style.position = 'relative'; 
+                        centralPortraitFrame.style.top = 'auto';
+                        centralPortraitFrame.style.left = 'auto';
+                        if(cardViewToggleBtn) cardViewToggleBtn.style.display = 'block';
+                     }
                 } else if (activeViewElement) { 
-                    if(centralPortraitFrame) centralPortraitFrame.style.display = 'none'; 
+                    if(mainContentArea) mainContentArea.classList.add('alternative-view-active');
+                    if(centralPortraitFrame) {
+                        centralPortraitFrame.style.display = 'flex';
+                        centralPortraitFrame.classList.add('is-minimal');
+                        if(cardViewToggleBtn) cardViewToggleBtn.style.display = 'none'; 
+                    }
+                    if(echoConstellationContainer) echoConstellationContainer.style.display = 'none';
+
                     if (activeViewElement === timelineViewPlaceholder) renderTimelineView(timelineViewPlaceholder, echosData);
                     else if (activeViewElement === contributorsViewPlaceholder) renderContributorsView(contributorsViewPlaceholder, echosData);
                     else if (activeViewElement === mapViewPlaceholder) renderMapView(mapViewPlaceholder, echosData);
@@ -1287,48 +1393,91 @@
             if(viewMapBtn && mapViewPlaceholder) viewMapBtn.addEventListener('click', () => setActiveSidebarView(viewMapBtn, mapViewPlaceholder));
             if(viewCategoriesBtn && categoriesViewPlaceholder) viewCategoriesBtn.addEventListener('click', () => setActiveSidebarView(viewCategoriesBtn, categoriesViewPlaceholder));
             
+            // Initial Sidebar State & View
+            if(sidebar && mainContentArea && detailedProfileView && sidebarToggleBtn) {
+                sidebar.classList.add('collapsed');
+                mainContentArea.classList.add('sidebar-collapsed');
+                detailedProfileView.classList.add('sidebar-collapsed');
+                sidebarToggleBtn.querySelector('i').classList.remove('fa-angle-double-left');
+                sidebarToggleBtn.querySelector('i').classList.add('fa-angle-double-right');
+                sidebarToggleBtn.setAttribute('aria-label', 'Expand sidebar');
+                document.documentElement.style.setProperty('--sidebar-width', '70px');
+            }
             if(viewConstellationBtn && echoConstellationView) {
                  setActiveSidebarView(viewConstellationBtn, echoConstellationView);
             }
 
+
+            function openMainEchoDetail(node) {
+                if (!echoConstellationView || echoConstellationView.style.display !== 'block' || node.style.opacity === '0') return;
+                if (!detailMediaContainer || !detailTitle || !detailDesc || !detailContributor || !detailDate || !detailOverlay || !toggleEchoContentBtn) return;
+                
+                previousCentralCardStateBeforeEchoOpen = centralPortraitFrame.classList.contains('is-minimal') ? 'minimal_by_toggle' : 'short';
+                centralPortraitFrame.classList.add('is-minimal');
+                if(cardViewToggleBtn) cardViewToggleBtn.style.display = 'none'; 
+
+                detailMediaContainer.innerHTML = '<img id="detail-media-img" src="" alt="Echo Media" class="rounded-lg object-contain max-h-96 w-full">';
+                detailMediaElement = document.getElementById('detail-media-img');
+
+                const dataType = node.dataset.type;
+                const dataSrc = node.dataset.src || `https://placehold.co/400x300/cccccc/333333?text=No+Media`;
+
+                if (dataType === 'video') {
+                    const videoEl = document.createElement('video');
+                    videoEl.src = dataSrc;
+                    videoEl.controls = true;
+                    videoEl.className = 'rounded-lg object-contain max-h-96 w-full';
+                    detailMediaContainer.innerHTML = ''; 
+                    detailMediaContainer.appendChild(videoEl);
+                } else if (dataType === 'audio') {
+                    const audioEl = document.createElement('audio');
+                    audioEl.src = dataSrc;
+                    audioEl.controls = true;
+                    audioEl.className = 'rounded-lg w-full mt-4';
+                    detailMediaContainer.innerHTML = ''; 
+                    detailMediaContainer.appendChild(audioEl);
+                } else { 
+                    if(detailMediaElement) detailMediaElement.src = dataSrc;
+                }
+
+                detailTitle.textContent = node.dataset.title || "Untitled Echo";
+                detailDesc.textContent = node.dataset.desc || "No description provided.";
+                detailDesc.classList.add('collapsed'); 
+                detailDesc.classList.remove('expanded');
+                toggleEchoContentBtn.textContent = "Read More";
+
+                detailContributor.textContent = node.dataset.contributor || "Unknown Contributor";
+                detailDate.textContent = node.dataset.date || "Unknown Date";
+                if(elaboratedStoryOutput) elaboratedStoryOutput.innerHTML = ''; 
+                detailOverlay.classList.remove('hidden');
+            }
+            
             function setupEchoNodeClickListener(node) { 
-                 node.addEventListener('click', () => {
-                    if (!echoConstellationView || echoConstellationView.style.display !== 'block' || node.style.opacity === '0') return;
-                    if (!detailMediaContainer || !detailTitle || !detailDesc || !detailContributor || !detailDate || !detailOverlay) return;
-                    
-                    detailMediaContainer.innerHTML = '<img id="detail-media-img" src="" alt="Echo Media" class="rounded-lg object-contain max-h-96 w-full">';
-                    detailMediaElement = document.getElementById('detail-media-img');
-
-                    const dataType = node.dataset.type;
-                    const dataSrc = node.dataset.src || `https://placehold.co/400x300/cccccc/333333?text=No+Media`;
-
-                    if (dataType === 'video') {
-                        const videoEl = document.createElement('video');
-                        videoEl.src = dataSrc;
-                        videoEl.controls = true;
-                        videoEl.className = 'rounded-lg object-contain max-h-96 w-full';
-                        detailMediaContainer.innerHTML = ''; 
-                        detailMediaContainer.appendChild(videoEl);
-                    } else if (dataType === 'audio') {
-                        const audioEl = document.createElement('audio');
-                        audioEl.src = dataSrc;
-                        audioEl.controls = true;
-                        audioEl.className = 'rounded-lg w-full mt-4';
-                        detailMediaContainer.innerHTML = ''; 
-                        detailMediaContainer.appendChild(audioEl);
-                    } else { 
-                        if(detailMediaElement) detailMediaElement.src = dataSrc;
-                    }
-
-                    detailTitle.textContent = node.dataset.title || "Untitled Echo";
-                    detailDesc.textContent = node.dataset.desc || "No description provided.";
-                    detailContributor.textContent = node.dataset.contributor || "Unknown Contributor";
-                    detailDate.textContent = node.dataset.date || "Unknown Date";
-                    if(elaboratedStoryOutput) elaboratedStoryOutput.innerHTML = ''; 
-                    detailOverlay.classList.remove('hidden');
+                 node.addEventListener('click', (e) => {
+                    // The + button was removed, so any click on the node opens the main detail
+                    openMainEchoDetail(node);
                 });
             }
-            document.querySelectorAll('.echo-node').forEach(setupEchoNodeClickListener); 
+            
+            // No longer need setupEchoExpandCollapseListeners as local preview is removed.
+            document.querySelectorAll('.echo-node').forEach(node => {
+                setupEchoNodeClickListener(node);
+            }); 
+
+
+            // Listener for Echo Detail Overlay's internal expand/collapse
+            if (toggleEchoContentBtn && detailDesc) {
+                toggleEchoContentBtn.addEventListener('click', () => {
+                    detailDesc.classList.toggle('collapsed');
+                    detailDesc.classList.toggle('expanded');
+                    if (detailDesc.classList.contains('expanded')) {
+                        toggleEchoContentBtn.textContent = "Read Less";
+                    } else {
+                        toggleEchoContentBtn.textContent = "Read More";
+                    }
+                });
+            }
+
 
             if(elaborateStoryBtn && detailDesc && detailTitle && elaboratedStoryOutput) {
                 elaborateStoryBtn.addEventListener('click', () => {
@@ -1338,10 +1487,34 @@
                     callGeminiAPI(prompt, elaborateStoryBtn, elaboratedStoryOutput);
                 });
             }
-            if(closeDetailButton && detailOverlay) closeDetailButton.addEventListener('click', () => detailOverlay.classList.add('hidden'));
+            
+            function closeEchoDetailOverlay() {
+                if(detailOverlay) detailOverlay.classList.add('hidden');
+                if (centralPortraitFrame) {
+                    if (previousCentralCardStateBeforeEchoOpen === 'short') {
+                        centralPortraitFrame.classList.remove('is-minimal');
+                        if(cardViewToggleBtn) {
+                            cardViewToggleBtn.querySelector('i').className = 'fas fa-chevron-down';
+                            cardViewToggleBtn.title = "Minimize Card";
+                            cardViewToggleBtn.style.display = 'block';
+                        }
+                        currentCentralCardState = 'short';
+                    } else { // Was 'minimal_by_toggle' or just 'minimal'
+                        centralPortraitFrame.classList.add('is-minimal');
+                         if(cardViewToggleBtn) {
+                            cardViewToggleBtn.querySelector('i').className = 'fas fa-expand';
+                            cardViewToggleBtn.title = "Go to Full Profile";
+                            cardViewToggleBtn.style.display = 'block';
+                        }
+                        currentCentralCardState = 'minimal_by_toggle'; // Keep it as this specific minimal state
+                    }
+                }
+            }
+
+            if(closeDetailButton && detailOverlay) closeDetailButton.addEventListener('click', closeEchoDetailOverlay);
             if(detailOverlay) {
                 detailOverlay.addEventListener('click', (e) => { 
-                    if (e.target === detailOverlay) detailOverlay.classList.add('hidden');
+                    if (e.target === detailOverlay) closeEchoDetailOverlay();
                 });
             }
 
@@ -1384,30 +1557,23 @@
             if (cardViewToggleBtn && centralPortraitFrame) {
                 cardViewToggleBtn.addEventListener('click', () => {
                     const icon = cardViewToggleBtn.querySelector('i');
-                    if (currentCentralCardState === 'short') {
+                    if (currentCentralCardState === 'short') { 
                         centralPortraitFrame.classList.add('is-minimal');
-                        icon.classList.remove('fa-chevron-down');
-                        icon.classList.add('fa-expand'); // Changed to fa-expand for "Go to Full Profile"
+                        icon.className = 'fas fa-expand'; 
                         cardViewToggleBtn.title = "Go to Full Profile";
-                        currentCentralCardState = 'minimal';
-                    } else if (currentCentralCardState === 'minimal') {
-                        // Go to Full Detail Page
+                        currentCentralCardState = 'minimal_by_toggle'; 
+                    } else if (currentCentralCardState === 'minimal_by_toggle') { 
                         if(mainContentArea) mainContentArea.style.display = 'none'; 
                         allAlternativePlaceholders.forEach(view => {if(view) view.style.display = 'none';}); 
                         if(echoConstellationView) echoConstellationView.style.display = 'none';
+                        if(echoConstellationContainer) echoConstellationContainer.style.display = 'none';
                         if(centralPortraitFrame) centralPortraitFrame.style.display = 'none';
 
                         if(detailedProfileView) detailedProfileView.style.display = 'flex'; 
                         populateDetailedTimeline(); 
                         window.scrollTo(0, 0); 
                         currentCentralCardState = 'full'; 
-                        // Icon on cardToggleBtn is not visible on detailed page, but we set it for when we return
-                        icon.classList.remove('fa-expand');
-                        icon.classList.add('fa-chevron-down'); // Next state will be 'short'
-                        cardViewToggleBtn.title = "Minimize Card";
-
                     } 
-                    // Note: Transition from 'full' back to 'short' is handled by backToHoowozBtn
                 });
             }
 
@@ -1421,53 +1587,77 @@
                         centralPortraitFrame.classList.remove('is-minimal'); 
                         if(cardViewToggleBtn) {
                            const icon = cardViewToggleBtn.querySelector('i');
-                           icon.classList.remove('fa-expand'); // Should be fa-chevron-up if coming from minimal
-                           icon.classList.remove('fa-window-close'); // Or whatever icon was for full
-                           icon.classList.add('fa-chevron-down');
+                           icon.className = 'fas fa-chevron-down'; 
                            cardViewToggleBtn.title = "Minimize Card";
+                           cardViewToggleBtn.style.display = 'block'; 
                         }
                     }
-                    currentCentralCardState = 'short';
+                    currentCentralCardState = 'short'; 
                     setActiveSidebarView(viewConstellationBtn, echoConstellationView); 
                     window.scrollTo(0, 0); 
                 });
             }
             
-            // Initial setup for card toggle button if centralPortraitFrame exists
             if (centralPortraitFrame && cardViewToggleBtn) {
-                 // Default to short view
                 centralPortraitFrame.classList.remove('is-minimal');
                 cardViewToggleBtn.querySelector('i').className = 'fas fa-chevron-down';
                 cardViewToggleBtn.title = "Minimize Card";
                 currentCentralCardState = 'short';
             }
 
-            // Ensure modals are defined before trying to access their children
-            const memoryDetailOverlayContent = document.querySelector('#memory-detail-overlay .memory-detail-overlay-content');
-            if (!memoryDetailOverlayContent && document.getElementById('memory-detail-overlay')) { 
-                console.warn("Memory detail overlay content div not found. Some functionality might be affected.");
-            } 
+            // --- Initial Echo Population ---
+            function populateInitialEchos() {
+                const initialEchosData = [
+                    { title: "Grandma's 80th", description: "A cherished memory from Grandma's 80th birthday celebration. The cake was delicious and everyone was so happy to be together. Hoowoz gave a wonderful speech that brought tears to our eyes. It was a truly special day filled with love and laughter, one we will never forget.", contributor: "Shared by: Sarah (Daughter)", date: "August 15, 2023", mediaType: "image/", mediaSrc: "https://placehold.co/60x60/e0e7ff/333333?text=P1", type: "specific", size: "small", top: "20%", left: "15%" },
+                    { title: "Trip to Italy", description: "Unforgettable adventures in Italy, pasta, and ancient ruins. Hoowoz loved the gelato! We explored Rome, Florence, and Venice, taking in all the sights and sounds. The food was incredible, and Hoowoz even tried to learn a few Italian phrases.", contributor: "Shared by: David (Friend)", date: "June 2, 2022", mediaType: "video/", mediaSrc: "https://placehold.co/400x300/ffe0e0/333333?text=Echo+Video+1", type: "specific", size: "medium", top: "30%", left: "80%" },
+                    { title: "Dad's Favorite Joke", description: "Recording of Dad telling his favorite joke about the squirrel. It always made us laugh until we cried. He had such a great sense of humor and knew how to light up a room.", contributor: "Shared by: Emily (Daughter)", date: "December 24, 2021", mediaType: "audio/", mediaSrc: "https://placehold.co/400x300/e0ffea/333333?text=Echo+Audio+1", type: "specific", size: "large", top: "75%", left: "25%" },
+                    { title: "First Day of School", description: "A vivid recollection of their first day of school, complete with a new lunchbox and a nervous smile. Hoowoz was so brave, even though they were a little scared. They made a new friend that day who remained a friend for life.", contributor: "Shared by: Alex (Sibling)", date: "September 1, 1955", type: "text", size: "medium", top: "60%", left: "70%" },
+                    { title: "Gardening Hobby", description: "Hoowoz's beautiful rose garden, a testament to their patience and love for nature. They spent hours tending to the flowers, and the garden was always a riot of color and fragrance.", contributor: "Shared by: Neighbor", date: "Spring 2020", mediaType: "image/", mediaSrc: "https://placehold.co/60x60/f5e1f4/333333?text=Garden", type: "specific", size: "small", top: "15%", left: "50%" },
+                    { title: "The Big Project", description: "Remembering the late nights and breakthroughs during the 'Project Phoenix'. Hoowoz's leadership was key to our success. They always knew how to motivate the team.", contributor: "Shared by: A Colleague", date: "March 10, 2010", type: "text", size: "large", top: "50%", left: "10%" },
+                    { title: "Beach Days", description: "So many sunny days spent at the beach, building sandcastles and laughing. Hoowoz taught me how to skip stones.", contributor: "Shared by: Grandchild", date: "July 2018", mediaType: "image/", mediaSrc: "https://placehold.co/60x60/cffafe/333333?text=Beach", type: "specific", size: "medium", top: "80%", left: "85%" },
+                    { title: "Words of Wisdom", description: "'Always be curious, and never stop learning.' - One of Hoowoz's many inspiring quotes that I carry with me.", contributor: "Shared by: Mentee", date: "Always", type: "condolence", size: "small", top: "40%", left: "30%" },
+                    { title: "University Days", description: "Photo from our wild university days! Hoowoz was always the life of the party and the smartest one in the room.", contributor: "Shared by: Old Friend", date: "October 1970", mediaType: "image/", mediaSrc: "https://placehold.co/60x60/fef9c3/333333?text=Uni", type: "specific", size: "medium", top: "25%", left: "65%" },
+                    { title: "Charity Gala", description: "Hoowoz looking dapper at the annual charity gala they helped organize. They raised so much for a good cause.", contributor: "Shared by: Event Volunteer", date: "November 5, 2019", mediaType: "photo", mediaSrc: "https://placehold.co/60x60/e9d5ff/333333?text=Gala", type: "specific", size: "large", top: "70%", left: "50%" },
+                    { title: "First Car", description: "The pride on Hoowoz's face with their very first car, a little blue beetle. We went on so many adventures in that car.", contributor: "Shared by: Family Member", date: "June 1975", type: "text", size: "small", top: "55%", left: "88%" },
+                    { title: "Holiday Singalong", description: "A short clip from our family holiday singalong, Hoowoz's voice was always the loudest and most joyful!", contributor: "Shared by: Niece", date: "December 25, 2022", mediaType: "video/", mediaSrc: "https://placehold.co/400x300/fecaca/333333?text=Sing", type: "specific", size: "medium", top: "10%", left: "35%" },
+                    { title: "Inspiring Speech", description: "Audio of Hoowoz's inspiring speech at the conference. It motivated so many of us.", contributor: "Shared by: Attendee", date: "May 12, 2017", mediaType: "audio/", mediaSrc: "https://placehold.co/400x300/bbf7d0/333333?text=Speech", type: "specific", size: "large", top: "85%", left: "10%" },
+                    { title: "A Kind Note", description: "Hoowoz always knew how to make someone feel better. This note meant the world to me during a tough time.", contributor: "Shared by: Friend", date: "January 20, 2020", type: "text", size: "small", top: "45%", left: "55%" },
+                    { title: "Retirement Party", description: "Celebrating Hoowoz's incredible career. So many wonderful stories shared. A true legend.", contributor: "Shared by: Former Team", date: "April 30, 2021", mediaType: "photo", mediaSrc: "https://placehold.co/60x60/fed7aa/333333?text=Party", type: "specific", size: "medium", top: "65%", left: "30%" }
+                ];
 
-            const addMemoryModalContent = document.querySelector('#add-memory-modal .add-memory-modal-content');
-             if (!addMemoryModalContent && document.getElementById('add-memory-modal')) {
-                console.warn("Add memory modal content div not found. Some functionality might be affected.");
-            } 
-            
-            if (!document.getElementById('message-modal')) { 
-                console.warn("Message modal not found. Some functionality might be affected.");
+                initialEchosData.forEach(echoData => {
+                    const echoNode = createEchoNodeDOM(echoData);
+                    echoConstellationView.appendChild(echoNode);
+                    setupEchoNodeClickListener(echoNode);
+                    // No longer need setupEchoExpandCollapseListeners(echoNode); as the + button is removed
+                });
             }
+            populateInitialEchos(); 
 
-            // Restore full HTML for modals if they were accidentally cleared in previous steps
-            if (document.getElementById('memory-detail-overlay') && !memoryDetailOverlayContent) {
-                 document.getElementById('memory-detail-overlay').innerHTML = `
-                    <div class="memory-detail-overlay-content bg-white rounded-xl shadow-2xl p-8 relative flex flex-col md:flex-row gap-6">
+
+            // --- Ensure all modals and overlays have their content ---
+            const ensureModalContent = (modalId, contentSelector, htmlContentProvider, eventListenersSetup) => {
+                const modalElement = document.getElementById(modalId);
+                if (modalElement && !modalElement.querySelector(contentSelector)) {
+                    console.warn(`${modalId} content not found. Restoring.`);
+                    modalElement.innerHTML = htmlContentProvider();
+                    if (eventListenersSetup) eventListenersSetup(); 
+                } else if (modalElement && eventListenersSetup) {
+                    eventListenersSetup(); 
+                }
+            };
+
+            ensureModalContent('memory-detail-overlay', '.memory-detail-overlay-content', 
+                () => `
+                    <div class="memory-detail-overlay-content bg-white rounded-xl shadow-2xl p-8 relative">
                         <button id="close-memory-detail" class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl"><i class="fas fa-times-circle"></i></button>
-                        <div id="detail-media-container" class="flex-shrink-0 w-full md:w-1/2 flex items-center justify-center">
+                        <div id="detail-media-container" class="flex-shrink-0 w-full md:w-1/2 flex items-center justify-center mb-4 md:mb-0 md:mr-6">
                              <img id="detail-media-img" src="" alt="Echo Media" class="rounded-lg object-contain max-h-96 w-full">
                         </div>
-                        <div class="flex-grow text-gray-800">
+                        <div class="echo-detail-text-container">
                             <h2 id="detail-title" class="text-3xl font-bold mb-3"></h2>
-                            <p id="detail-desc" class="text-md leading-relaxed mb-4"></p>
+                            <p id="detail-desc" class="text-md leading-relaxed mb-2 collapsed"></p>
+                            <button id="toggle-echo-content-btn" class="text-blue-600 hover:text-blue-800 text-sm font-semibold mb-3">Read More</button>
                             <div id="elaborated-story-output" class="w-full mt-3 text-sm"></div>
                             <button id="elaborate-story-btn" class="mt-2 mb-4 px-4 py-2 bg-teal-500 text-white rounded-full shadow-md hover:bg-teal-600 transition-colors duration-200 flex items-center space-x-2"><i class="fas fa-book-reader"></i><span>✨ Lumin, Elaborate</span></button>
                             <p id="detail-contributor" class="text-sm text-gray-600 mb-1"></p>
@@ -1477,22 +1667,45 @@
                                 <button class="flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"><i class="fas fa-comment"></i><span>Comment</span></button>
                             </div>
                         </div>
-                    </div>`;
-                const newCloseDetailButton = document.getElementById('close-memory-detail');
-                if(newCloseDetailButton && detailOverlay) newCloseDetailButton.addEventListener('click', () => detailOverlay.classList.add('hidden'));
-                const newElaborateStoryBtn = document.getElementById('elaborate-story-btn');
-                 if(newElaborateStoryBtn && document.getElementById('detail-desc') && document.getElementById('detail-title') && document.getElementById('elaborated-story-output')) {
-                    newElaborateStoryBtn.addEventListener('click', () => {
-                        const memoryDescription = document.getElementById('detail-desc').textContent;
-                        const memoryTitleText = document.getElementById('detail-title').textContent;
-                        const prompt = `This is an echo from Hoowoz, titled "${memoryTitleText}", described as: "${memoryDescription}". As Lumin, the AI memory keeper, please elaborate on this echo, expanding it into a more vivid and engaging short story (around 100-150 words). Focus on evoking emotions and painting a picture for the reader, maintaining a gentle and respectful tone.`;
-                        callGeminiAPI(prompt, newElaborateStoryBtn, document.getElementById('elaborated-story-output'));
-                    });
-                }
-            }
+                    </div>`,
+                () => {
+                    const newCloseDetailButton = document.getElementById('close-memory-detail');
+                    const detailOverlayEl = document.getElementById('memory-detail-overlay'); 
+                    if(newCloseDetailButton && detailOverlayEl) newCloseDetailButton.addEventListener('click', closeEchoDetailOverlay);
+                    
+                    const newElaborateStoryBtn = document.getElementById('elaborate-story-btn');
+                    const detailDescEl = document.getElementById('detail-desc');
+                    const detailTitleEl = document.getElementById('detail-title');
+                    const elaboratedStoryOutputEl = document.getElementById('elaborated-story-output');
+                    const newToggleEchoContentBtn = document.getElementById('toggle-echo-content-btn');
 
-            if (document.getElementById('add-memory-modal') && !addMemoryModalContent) {
-                document.getElementById('add-memory-modal').innerHTML = `
+
+                    if(newElaborateStoryBtn && detailDescEl && detailTitleEl && elaboratedStoryOutputEl) {
+                        newElaborateStoryBtn.addEventListener('click', () => {
+                            const memoryDescription = detailDescEl.textContent;
+                            const memoryTitleText = detailTitleEl.textContent;
+                            const prompt = `This is an echo from Hoowoz, titled "${memoryTitleText}", described as: "${memoryDescription}". As Lumin, the AI memory keeper, please elaborate...`;
+                            callGeminiAPI(prompt, newElaborateStoryBtn, elaboratedStoryOutputEl);
+                        });
+                    }
+                    if (newToggleEchoContentBtn && detailDescEl) {
+                        if (!newToggleEchoContentBtn.getAttribute('listener-attached')) {
+                            newToggleEchoContentBtn.addEventListener('click', () => {
+                                detailDescEl.classList.toggle('collapsed');
+                                detailDescEl.classList.toggle('expanded');
+                                if (detailDescEl.classList.contains('expanded')) {
+                                    newToggleEchoContentBtn.textContent = "Read Less";
+                                } else {
+                                    newToggleEchoContentBtn.textContent = "Read More";
+                                }
+                            });
+                            newToggleEchoContentBtn.setAttribute('listener-attached', 'true');
+                        }
+                    }
+                }
+            );
+            ensureModalContent('add-memory-modal', '.add-memory-modal-content',
+                () => `
                     <div class="add-memory-modal-content bg-white rounded-xl shadow-2xl flex flex-col" style="height: auto; min-height:300px; max-height: 90vh; width:90%; max-width: 500px;">
                         <div class="p-4 border-b border-gray-200 flex justify-between items-center">
                             <h2 id="add-memory-modal-title" class="text-xl font-semibold text-gray-700">Lumin: Share Your Echo</h2>
@@ -1509,64 +1722,44 @@
                             <button id="next-step-btn" class="px-5 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors">Next</button>
                             <button id="save-memory-btn" class="px-5 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors hidden">Save Echo</button>
                         </div>
-                    </div>`;
-                const newCloseAddMemoryModalBtn = document.getElementById('close-add-memory-modal-btn');
-                if(newCloseAddMemoryModalBtn && addMemoryModal) newCloseAddMemoryModalBtn.addEventListener('click', () => addMemoryModal.classList.add('hidden'));
-
-                const newPrevStepBtn = document.getElementById('prev-step-btn');
-                if(newPrevStepBtn) newPrevStepBtn.addEventListener('click', handlePrevStep);
-                const newNextStepBtn = document.getElementById('next-step-btn');
-                if(newNextStepBtn) newNextStepBtn.addEventListener('click', handleNextStep);
-                const newSaveMemoryBtn = document.getElementById('save-memory-btn');
-                if (newSaveMemoryBtn) { // Re-attach save memory listener
-                     newSaveMemoryBtn.addEventListener('click', () => {
-                        if (!newMemoryData.userName || !newMemoryData.memoryTitle || !newMemoryData.memoryDescription) {
-                             showMessage("Incomplete Echo", "Lumin needs a Name, Title, and Description for your echo. Please review.");
-                             return;
-                        }
-                        const newEchoNode = document.createElement('div');
-                        const sizes = ['small', 'medium', 'large'];
-                        const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
-                        newEchoNode.className = `echo-node ${randomSize} group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto`;
-                        
-                        const top = Math.random() * 70 + 15; 
-                        const left = Math.random() * 70 + 15;
-                        newEchoNode.style.top = `${top}%`;
-                        newEchoNode.style.left = `${left}%`;
-                        
-                        newEchoNode.dataset.title = newMemoryData.memoryTitle;
-                        newEchoNode.dataset.desc = newMemoryData.memoryDescription;
-                        newEchoNode.dataset.contributor = `Shared by: ${newMemoryData.userName} (${newMemoryData.relationship || 'N/A'})`;
-                        newEchoNode.dataset.date = newMemoryData.memoryWhen || new Date().toLocaleDateString();
-                        
-                        let thumbnailContent = '';
-                        if (newMemoryData.memoryMediaType && newMemoryData.memoryMediaType.startsWith('image/')) {
-                            newEchoNode.dataset.type = 'photo'; newEchoNode.dataset.src = newMemoryData.memoryMedia;
-                            thumbnailContent = `<img src="${newMemoryData.memoryMedia}" alt="Echo Thumbnail" class="echo-thumbnail-img">`;
-                        } else if (newMemoryData.memoryMediaType && newMemoryData.memoryMediaType.startsWith('video/')) {
-                            newEchoNode.dataset.type = 'video'; newEchoNode.dataset.src = newMemoryData.memoryMedia;
-                            thumbnailContent = `<i class="fas fa-play text-blue-300 echo-thumbnail-icon"></i>`;
-                        } else if (newMemoryData.memoryMediaType && newMemoryData.memoryMediaType.startsWith('audio/')) {
-                            newEchoNode.dataset.type = 'audio'; newEchoNode.dataset.src = newMemoryData.memoryMedia;
-                            thumbnailContent = `<i class="fas fa-volume-up text-green-300 echo-thumbnail-icon"></i>`;
-                        } else { 
-                            newEchoNode.dataset.type = 'text'; 
-                            newEchoNode.dataset.src = `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(newMemoryData.memoryTitle.substring(0,20))}`; 
-                            const iconClass = newMemoryData.memoryType === 'condolence' ? 'fa-comment-alt' : 'fa-feather-alt'; 
-                            thumbnailContent = `<i class="fas ${iconClass} text-purple-300 echo-thumbnail-icon"></i>`;
-                        }
-                        newEchoNode.innerHTML = `${thumbnailContent}<span class="echo-title">${newMemoryData.memoryTitle}</span>`;
-                        
-                        if(echoConstellationView) echoConstellationView.appendChild(newEchoNode);
-                        setupEchoNodeClickListener(newEchoNode); 
-                        
-                        showMessage("Echo Saved", `Thank you, ${newMemoryData.userName}. Lumin has carefully preserved your echo: "${newMemoryData.memoryTitle}".`);
-                        if(addMemoryModal) addMemoryModal.classList.add('hidden');
-                    });
+                    </div>`,
+                () => {
+                    const newCloseAddMemoryModalBtn = document.getElementById('close-add-memory-modal-btn');
+                    const addMemoryModalEl = document.getElementById('add-memory-modal');
+                    if(newCloseAddMemoryModalBtn && addMemoryModalEl) newCloseAddMemoryModalBtn.addEventListener('click', () => addMemoryModalEl.classList.add('hidden'));
+                    
+                    const newPrevStepBtn = document.getElementById('prev-step-btn');
+                    if(newPrevStepBtn) newPrevStepBtn.addEventListener('click', handlePrevStep);
+                    const newNextStepBtn = document.getElementById('next-step-btn');
+                    if(newNextStepBtn) newNextStepBtn.addEventListener('click', handleNextStep);
+                     const newSaveMemoryBtn = document.getElementById('save-memory-btn');
+                    if (newSaveMemoryBtn) { 
+                         newSaveMemoryBtn.addEventListener('click', () => {
+                            if (!newMemoryData.userName || !newMemoryData.memoryTitle || !newMemoryData.memoryDescription) {
+                                 showMessage("Incomplete Echo", "Lumin needs a Name, Title, and Description for your echo. Please review.");
+                                 return;
+                            }
+                            const echoDataForNode = {
+                                title: newMemoryData.memoryTitle,
+                                description: newMemoryData.memoryDescription,
+                                contributor: `Shared by: ${newMemoryData.userName} (${newMemoryData.relationship || 'N/A'})`,
+                                date: newMemoryData.memoryWhen || new Date().toLocaleDateString(),
+                                mediaType: newMemoryData.memoryMediaType,
+                                mediaSrc: newMemoryData.memoryMedia,
+                                type: newMemoryData.memoryType 
+                            };
+                            const newEchoNode = createEchoNodeDOM(echoDataForNode);
+                            if(echoConstellationView) echoConstellationView.appendChild(newEchoNode);
+                            setupEchoNodeClickListener(newEchoNode); 
+                            // setupEchoExpandCollapseListeners(newEchoNode); // No longer needed
+                            showMessage("Echo Saved", `Thank you, ${newMemoryData.userName}. Lumin has carefully preserved your echo: "${newMemoryData.memoryTitle}".`);
+                            if(addMemoryModalEl) addMemoryModalEl.classList.add('hidden');
+                        });
+                    }
                 }
-            }
-             if (document.getElementById('detailed-profile-view') && !document.getElementById('back-to-hoowoz-btn')) {
-                document.getElementById('detailed-profile-view').innerHTML = `
+            );
+             ensureModalContent('detailed-profile-view', '#detailed-profile-content',
+                () => `
                     <button id="back-to-hoowoz-btn" class="px-5 py-2 bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors flex items-center space-x-2">
                         <i class="fas fa-arrow-left"></i>
                         <span>Back to Hoowoz</span>
@@ -1582,38 +1775,45 @@
                             <h3>Life's Journey</h3>
                             <div id="detailed-timeline-items"></div>
                         </div>
-                    </div>`;
-                const newBackToHoowozBtn = document.getElementById('back-to-hoowoz-btn');
-                if(newBackToHoowozBtn && mainContentArea && detailedProfileView) {
-                    newBackToHoowozBtn.addEventListener('click', () => {
-                         if(detailedProfileView) detailedProfileView.style.display = 'none'; 
-                        if(mainContentArea) mainContentArea.style.display = 'flex'; 
-                        if(centralPortraitFrame) {
-                            centralPortraitFrame.style.display = 'flex';
-                            centralPortraitFrame.classList.remove('is-minimal');
-                            if(cardViewToggleBtn) { // Corrected variable name
-                               const icon = cardViewToggleBtn.querySelector('i');
-                               icon.classList.remove('fa-expand'); // Or fa-chevron-up
-                               icon.classList.add('fa-chevron-down');
-                               cardViewToggleBtn.title = "Minimize Card";
+                    </div>`,
+                () => {
+                    const newBackToHoowozBtn = document.getElementById('back-to-hoowoz-btn');
+                    const mainContentAreaEl = document.getElementById('main-content-area');
+                    const detailedProfileViewEl = document.getElementById('detailed-profile-view');
+                    if(newBackToHoowozBtn && mainContentAreaEl && detailedProfileViewEl) {
+                        newBackToHoowozBtn.addEventListener('click', () => {
+                            if(detailedProfileViewEl) detailedProfileViewEl.style.display = 'none'; 
+                            if(mainContentAreaEl) mainContentAreaEl.style.display = 'flex'; 
+                            if(centralPortraitFrame) {
+                                centralPortraitFrame.style.display = 'flex';
+                                centralPortraitFrame.classList.remove('is-minimal');
+                                if(cardViewToggleBtn) { 
+                                   const icon = cardViewToggleBtn.querySelector('i');
+                                   icon.className = 'fas fa-chevron-down';
+                                   cardViewToggleBtn.title = "Minimize Card";
+                                   cardViewToggleBtn.style.display = 'block';
+                                }
                             }
-                        }
-                        currentCentralCardState = 'short';
-                        setActiveSidebarView(viewConstellationBtn, echoConstellationView); 
-                        window.scrollTo(0, 0); 
-                    });
+                            currentCentralCardState = 'short';
+                            setActiveSidebarView(viewConstellationBtn, echoConstellationView); 
+                            window.scrollTo(0, 0); 
+                        });
+                    }
                 }
-            }
-            if (document.getElementById('message-modal') && !document.getElementById('message-modal-title')) {
-                document.getElementById('message-modal').innerHTML = `
+            );
+            ensureModalContent('message-modal', '.bg-white',
+                () => `
                     <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
                         <h3 id="message-modal-title" class="text-xl font-semibold mb-3">Message</h3>
                         <p id="message-modal-text" class="text-gray-700 mb-4"></p>
                         <button id="message-modal-close" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Close</button>
-                    </div>`;
-                const newMsgModalClose = document.getElementById('message-modal-close');
-                if(newMsgModalClose && messageModal) newMsgModalClose.addEventListener('click', () => messageModal.classList.add('hidden'));
-            }
+                    </div>`,
+                () => {
+                    const newMsgModalClose = document.getElementById('message-modal-close');
+                    const messageModalEl = document.getElementById('message-modal');
+                    if(newMsgModalClose && messageModalEl) newMsgModalClose.addEventListener('click', () => messageModalEl.classList.add('hidden'));
+                }
+            );
 
 
         });
