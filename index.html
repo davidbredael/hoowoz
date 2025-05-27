@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoowoz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            overflow-y: auto;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2c5282 100%); 
+        }
+        @keyframes float {
+            0% { transform: translateY(0px) translateX(0px) scale(var(--echo-scale, 1)); }
+            50% { transform: translateY(-10px) translateX(5px) scale(var(--echo-scale, 1)); }
+            100% { transform: translateY(0px) translateX(0px) scale(var(--echo-scale, 1)); }
+        }
+        .echo-node { 
+            animation: float 8s ease-in-out infinite; 
+            transition: opacity 0.5s ease-in-out, transform 0.3s ease-in-out;
+            background-color: rgba(255, 255, 255, 0.8); 
+            backdrop-filter: blur(5px);
+            border-radius: 50%; 
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5), 0 0 25px rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .echo-node.small { --echo-scale: 0.7; width: 48px; height: 48px; } 
+        .echo-node.medium { --echo-scale: 1; width: 64px; height: 64px; } 
+        .echo-node.large { --echo-scale: 1.3; width: 80px; height: 80px; } 
+
+        .echo-node:nth-child(2n) { animation-delay: -1.5s; }
+        .echo-node:nth-child(3n) { animation-delay: -3s; }
+        .echo-node:nth-child(4n) { animation-delay: -4.5s; }
+        .echo-node:nth-child(5n) { animation-delay: -6s; }
+
+
+        .echo-node .echo-thumbnail-icon {
+            font-size: calc(var(--echo-scale, 1) * 1.5rem); 
+            opacity: 0.8;
+        }
+         .echo-node img.echo-thumbnail-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%; 
+        }
+
+
+        .memory-detail-overlay-content, .add-memory-modal-content {
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        @media (min-width: 768px) {
+            .memory-detail-overlay-content { max-width: 800px; }
+            .add-memory-modal-content { max-width: 550px; }
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border-left-color: #09f;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .generated-content-box {
+            background-color: #e9f5ff;
+            border-left: 4px solid #2196F3;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 4px;
+            font-style: italic;
+            color: #333;
+        }
+        .form-step { display: none; padding: 20px; text-align: center; }
+        .form-step.active { display: block; }
+        .form-step .ai-prompt-container {
+            display: flex;
+            align-items: flex-start; 
+            gap: 10px; 
+            font-size: 1.1rem; color: #374151; margin-bottom: 20px; line-height: 1.6; text-align: left;
+        }
+        .form-step .ai-prompt-container .ai-icon {
+            color: #3B82F6; 
+            font-size: 1.5rem; 
+            margin-top: 2px; 
+        }
+        .form-step .ai-prompt strong { color: #1E3A8A; } 
+
+        .form-step .input-wrapper {
+            position: relative;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .form-step input[type="text"], .form-step textarea {
+            width: 100%;
+            padding: 12px;
+            padding-right: 40px; 
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .form-step textarea { min-height: 100px; resize: vertical; }
+        .speech-to-text-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: #6B7280; 
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        .speech-to-text-btn:hover { color: #3B82F6; }
+        .speech-to-text-btn.listening { color: #EF4444; }
+
+
+        .form-step .options-buttons button { margin: 5px; padding: 10px 20px; border-radius: 20px; background-color: #E5E7EB; color: #374151; transition: background-color 0.2s; }
+        .form-step .options-buttons button:hover, .form-step .options-buttons button.selected { background-color: #3B82F6; color: white; }
+        #memory-preview-image-container img, #memory-preview-image-container video, #memory-preview-image-container audio { max-height: 100px; object-fit: contain; border-radius: 0.5rem; margin: 0 auto 10px auto; display: block; }
+
+        /* Sidebar for browsing options */
+        .browse-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 220px; 
+            background-color: rgba(255, 255, 255, 0.1); 
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            padding-top: 60px; 
+            box-shadow: 2px 0 15px rgba(0,0,0,0.2);
+            z-index: 40;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            transition: width 0.3s ease-in-out;
+        }
+        .browse-sidebar.collapsed {
+            width: 70px; 
+        }
+        .browse-sidebar.collapsed .sidebar-item-text {
+            display: none;
+        }
+        .browse-sidebar.collapsed .browse-sidebar-toggle {
+            justify-content: center;
+        }
+         .browse-sidebar.collapsed .browse-sidebar-item {
+            justify-content: center;
+        }
+
+        .browse-sidebar-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px; 
+            background: transparent;
+            border: none;
+            color: #e0e7ff; 
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s, background-color 0.2s;
+        }
+        .browse-sidebar-toggle:hover {
+            color: #ffffff; 
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+         .browse-sidebar.collapsed .browse-sidebar-toggle {
+            right: auto; 
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+
+        .browse-sidebar-item { 
+            width: 100%;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            background-color: transparent;
+            border: 1px solid transparent;
+            color: #d1d5db; 
+            text-align: left;
+            border-radius: 8px;
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+            font-weight: 500;
+            display: flex; 
+            align-items: center; 
+            cursor: pointer;
+        }
+        .browse-sidebar-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+        .browse-sidebar-item.active-view {
+            background-color: rgba(59, 130, 246, 0.5); 
+            color: white;
+            font-weight: 600;
+            border-color: rgba(37, 99, 235, 0.7);
+        }
+        .browse-sidebar-item i {
+            margin-right: 12px; 
+            width: 20px;
+            text-align: center; 
+            font-size: 1.1rem; 
+        }
+         .browse-sidebar.collapsed .browse-sidebar-item i {
+            margin-right: 0; 
+        }
+
+
+        #main-content-area { 
+            position: relative;
+            width: 100%;
+            min-height: 100vh; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-left: 220px; 
+            transition: padding-left 0.3s ease-in-out, opacity 0.5s ease-in-out;
+        }
+        #detailed-profile-view { 
+             position: relative;
+            width: 100%;
+            min-height: 100vh; 
+            display: none; 
+            flex-direction: column;
+            padding-top: 80px; 
+            padding-bottom: 40px;
+            align-items: center;
+            justify-content: flex-start; 
+            background: white; 
+            padding-left: 220px; 
+            transition: padding-left 0.3s ease-in-out, opacity 0.5s ease-in-out;
+        }
+
+         #main-content-area.sidebar-collapsed, #detailed-profile-view.sidebar-collapsed {
+            padding-left: 70px; 
+        }
+        
+        /* Styles for Alternative View Content */
+        .alternative-view-content-wrapper {
+            width: 100%;
+            max-width: 900px;
+            margin: 2rem auto; 
+            padding: 2rem;
+            background-color: rgba(255, 255, 255, 0.1); 
+            backdrop-filter: blur(8px);
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            color: #e0e7ff; 
+            max-height: calc(100vh - 120px); 
+            overflow-y: auto;
+        }
+        .alternative-view-content-wrapper h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+        }
+        .alternative-view-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            align-items: center;
+        }
+        .alternative-view-item:last-child { border-bottom: none; }
+        .alternative-view-item-thumbnail {
+            width: 60px; height: 60px;
+            border-radius: 8px;
+            background-color: rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .alternative-view-item-thumbnail img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px;}
+        .alternative-view-item-thumbnail i { font-size: 1.5rem; color: #cbd5e1; }
+
+        .alternative-view-item-details .title { font-size: 1.2rem; font-weight: 600; color: #ffffff; margin-bottom: 0.25rem; }
+        .alternative-view-item-details .meta { font-size: 0.875rem; color: #9ca3af; margin-bottom: 0.5rem; }
+        .alternative-view-item-details .description { font-size: 0.95rem; color: #d1d5db; line-height: 1.5; }
+        
+        .contributor-group h3 {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        .category-list button {
+            background-color: rgba(255,255,255,0.2);
+            color: #e0e7ff;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            margin: 0.25rem;
+            transition: background-color 0.2s;
+        }
+        .category-list button:hover { background-color: rgba(59, 130, 246, 0.5); }
+
+        .mock-map-container { text-align: center; }
+        .mock-map-container img { max-width: 100%; height: auto; border-radius: 8px; margin-top: 1rem; opacity: 0.7;}
+
+
+        /* Detailed Profile View Styles */
+        #detailed-profile-content {
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 900px; 
+            text-align: center;
+        }
+        #detailed-profile-content .large-portrait {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 20px auto;
+            border: 6px solid #a7d9e7; 
+        }
+        #detailed-profile-content h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1E3A8A;
+            margin-bottom: 10px;
+        }
+        #detailed-profile-content .profile-bio {
+            font-size: 1.1rem;
+            color: #4B5563; 
+            line-height: 1.7;
+            margin-bottom: 30px;
+            text-align: left; 
+        }
+
+        .detailed-timeline-container {
+            margin-top: 30px;
+            text-align: left;
+        }
+        .detailed-timeline-container h3 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #374151; 
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb; 
+        }
+        .timeline-item {
+            display: flex;
+            gap: 20px;
+            padding: 20px 0;
+            border-bottom: 1px dashed #d1d5db; 
+        }
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+        .timeline-item-media {
+            flex-shrink: 0;
+            width: 150px; 
+        }
+        .timeline-item-media img, .timeline-item-media video {
+            width: 100%;
+            height: auto;
+            max-height: 120px; 
+            border-radius: 8px;
+            object-fit: cover;
+            background-color: #f3f4f6; 
+        }
+        .timeline-item-content {
+            flex-grow: 1;
+        }
+        .timeline-item-content .date {
+            font-size: 0.9rem;
+            color: #6B7280; 
+            margin-bottom: 5px;
+        }
+        .timeline-item-content .title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1F2937; 
+            margin-bottom: 8px;
+        }
+        .timeline-item-content .description {
+            font-size: 1rem;
+            color: #4B5563; 
+            line-height: 1.6;
+        }
+        #back-to-hoowoz-btn { 
+            position: absolute;
+            top: 20px;
+            left: 20px; 
+            z-index: 10; 
+        }
+        #detailed-profile-view.sidebar-collapsed #back-to-hoowoz-btn {
+            left: calc(70px + 20px);
+        }
+        #detailed-profile-view:not(.sidebar-collapsed) #back-to-hoowoz-btn {
+             left: calc(220px + 20px);
+        }
+
+        .central-portrait-frame { 
+            position: relative; 
+            background-color: rgba(255, 255, 255, 0.1); 
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #e0e7ff; 
+            transition: width 0.3s ease-in-out, min-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+        }
+        .central-portrait-frame h1, .central-portrait-frame p {
+            color: #e0e7ff; 
+            transition: font-size 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+         .central-portrait-frame .ring-blue-300 {
+            border-color: rgba(147, 197, 253, 0.7); 
+        }
+        
+        /* Minimal View for Central Portrait */
+        .central-portrait-frame.is-minimal {
+            width: 180px !important; /* Adjusted for better fit */
+            min-height: auto !important;
+            padding: 0.75rem !important; /* p-3 */
+        }
+        .central-portrait-frame.is-minimal #central-portrait-img {
+            width: 64px !important; /* w-16 */
+            height: 64px !important; /* h-16 */
+            margin-bottom: 0.5rem !important; /* mb-2 */
+        }
+        .central-portrait-frame.is-minimal #central-portrait-name {
+            font-size: 1.25rem !important; /* text-xl */
+            margin-bottom: 0 !important;
+        }
+        .central-portrait-frame.is-minimal .portrait-date,
+        .central-portrait-frame.is-minimal #main-bio,
+        .central-portrait-frame.is-minimal #play-audio-summary-btn {
+            display: none !important;
+        }
+
+
+        #card-view-toggle-btn { /* Renamed from expand-icon-btn */
+            position: absolute;
+            top: 1rem; 
+            right: 1rem; 
+            background-color: rgba(0, 0, 0, 0.3); 
+            color: #e0e7ff; 
+            padding: 0.5rem; 
+            border-radius: 9999px; 
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+            z-index: 25; 
+        }
+        #card-view-toggle-btn:hover {
+            background-color: rgba(0, 0, 0, 0.5); 
+            color: #ffffff; 
+        }
+        .echo-title { 
+            position: absolute;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            font-size: 0.75rem; 
+            padding: 0.25rem 0.5rem; 
+            border-radius: 0.375rem; 
+            bottom: -2rem; 
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            white-space: nowrap;
+            pointer-events: none; 
+        }
+        .echo-node:hover .echo-title {
+            opacity: 1;
+        }
+
+
+    </style>
+</head>
+<body class="min-h-screen relative">
+
+    <aside id="browse-sidebar" class="browse-sidebar">
+        <button id="browse-sidebar-toggle" class="browse-sidebar-toggle" aria-label="Toggle sidebar">
+            <i class="fas fa-angle-double-left"></i>
+        </button>
+        <button id="view-constellation-btn" class="browse-sidebar-item active-view">
+            <i class="fas fa-star"></i><span class="sidebar-item-text">Echoes Constellation</span>
+        </button>
+        <button id="view-timeline-btn" class="browse-sidebar-item">
+            <i class="fas fa-stream"></i><span class="sidebar-item-text">Timeline View</span>
+        </button>
+        <button id="view-contributors-btn" class="browse-sidebar-item">
+            <i class="fas fa-users"></i><span class="sidebar-item-text">Contributors View</span>
+        </button>
+        <button id="view-map-btn" class="browse-sidebar-item">
+            <i class="fas fa-map-marked-alt"></i><span class="sidebar-item-text">Map View</span>
+        </button>
+        <button id="view-categories-btn" class="browse-sidebar-item">
+            <i class="fas fa-tags"></i><span class="sidebar-item-text">Categories View</span>
+        </button>
+    </aside>
+
+    <main id="main-content-area">
+        <div class="central-portrait-frame absolute z-20 flex flex-col items-center justify-center rounded-3xl p-8 shadow-2xl transition-all duration-500 ease-in-out transform hover:scale-105"
+             style="width: 320px; min-height: 420px;"> 
+            <button id="card-view-toggle-btn" title="Minimize Card"> <i class="fas fa-chevron-down"></i> </button>
+            <img id="central-portrait-img" src="https://placehold.co/120x120/a7d9e7/1E3A8A?text=H" alt="Hoowoz's Portrait" class="w-32 h-32 rounded-full object-cover mb-4 ring-4 ring-blue-300 ring-opacity-75 shadow-lg">
+            <h1 id="central-portrait-name" class="text-4xl font-bold mb-2 text-center">Hoowoz</h1> 
+            <p class="portrait-date text-lg opacity-80 mb-4">1950 - 2024</p>
+            <p id="main-bio" class="text-sm opacity-90 text-center leading-relaxed mb-4">
+                A beacon of joy and wisdom, Hoowoz touched countless lives with their kindness,
+                unwavering spirit, and passion for innovation. They were a true pioneer, always inspiring
+                those around them to reach for the stars.
+            </p>
+            <button id="play-audio-summary-btn" class="mt-auto px-6 py-2 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+                <i class="fas fa-play-circle"></i>
+                <span>Play Audio Summary</span>
+            </button>
+            </div>
+
+        <div id="echo-constellation" class="absolute w-full h-full pointer-events-none">
+            <div class="echo-node small group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto" style="top: 20%; left: 15%;" data-type="photo" data-title="Grandma's 80th Birthday" data-src="https://placehold.co/400x300/e0e7ff/333333?text=Echo+Photo+1" data-desc="A cherished memory from Grandma's 80th birthday celebration..." data-contributor="Shared by: Sarah (Daughter)" data-date="August 15, 2023">
+                <img src="https://placehold.co/60x60/e0e7ff/333333?text=P1" alt="Echo Thumbnail" class="echo-thumbnail-img">
+                <span class="echo-title">Grandma's 80th</span>
+            </div>
+            <div class="echo-node medium group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto" style="top: 30%; left: 80%;" data-type="video" data-title="Our Trip to Italy" data-src="https://placehold.co/400x300/ffe0e0/333333?text=Echo+Video+1" data-desc="Unforgettable adventures in Italy..." data-contributor="Shared by: David (Friend)" data-date="June 2, 2022">
+                <i class="fas fa-play text-red-700 echo-thumbnail-icon"></i>
+                <span class="echo-title">Trip to Italy</span>
+            </div>
+            <div class="echo-node large group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto" style="top: 75%; left: 25%;" data-type="audio" data-title="Dad's Favorite Joke" data-src="https://placehold.co/400x300/e0ffea/333333?text=Echo+Audio+1" data-desc="Recording of Dad telling his favorite joke..." data-contributor="Shared by: Emily (Daughter)" data-date="December 24, 2021">
+                 <i class="fas fa-volume-up text-green-700 echo-thumbnail-icon"></i>
+                <span class="echo-title">Dad's Joke</span>
+            </div>
+            <div class="echo-node medium group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto" style="top: 60%; left: 70%;" data-type="text" data-title="First Day of School" data-src="https://placehold.co/400x300/fffbe0/333333?text=Echo+Text+1" data-desc="A vivid recollection of their first day of school..." data-contributor="Shared by: Alex (Sibling)" data-date="September 1, 1955">
+                <i class="fas fa-feather-alt text-yellow-700 echo-thumbnail-icon"></i>
+                <span class="echo-title">First Day of School</span>
+            </div>
+             <div class="echo-node small group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto" style="top: 15%; left: 50%;" data-type="photo" data-title="Gardening Hobby" data-src="https://placehold.co/400x300/f5e1f4/333333?text=Garden" data-desc="Hoowoz's beautiful rose garden, a testament to their patience and love for nature." data-contributor="Shared by: Neighbor" data-date="Spring 2020">
+                <img src="https://placehold.co/60x60/f5e1f4/333333?text=Garden" alt="Echo Thumbnail" class="echo-thumbnail-img">
+                <span class="echo-title">Rose Garden</span>
+            </div>
+        </div>
+        
+        <div id="timeline-view-placeholder" class="alternative-view-placeholder" style="display: none;"></div>
+        <div id="contributors-view-placeholder" class="alternative-view-placeholder" style="display: none;"></div>
+        <div id="map-view-placeholder" class="alternative-view-placeholder" style="display: none;"></div>
+        <div id="categories-view-placeholder" class="alternative-view-placeholder" style="display: none;"></div>
+
+    </main>
+
+    <div id="detailed-profile-view">
+        <button id="back-to-hoowoz-btn" class="px-5 py-2 bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors flex items-center space-x-2">
+            <i class="fas fa-arrow-left"></i>
+            <span>Back to Hoowoz</span>
+        </button>
+        <div id="detailed-profile-content">
+            <img id="detailed-view-large-portrait" src="https://placehold.co/200x200/a7d9e7/1E3A8A?text=H" alt="Hoowoz - Large Portrait" class="large-portrait">
+            <h2 id="detailed-view-name">Hoowoz</h2>
+            <p id="detailed-view-dates" class="text-lg text-gray-500 mb-4">1950 - 2024</p>
+            <p id="detailed-view-bio" class="profile-bio">
+                This is an expanded biography for Hoowoz. It could contain more details about their life, achievements, passions, and the impact they had on others. This section allows for a richer narrative than the brief summary on the main Hoowoz page. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+            </p>
+            <div class="detailed-timeline-container">
+                <h3>Life's Journey</h3>
+                <div id="detailed-timeline-items">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="memory-detail-overlay" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden p-4">
+        <div class="memory-detail-overlay-content bg-white rounded-xl shadow-2xl p-8 relative flex flex-col md:flex-row gap-6">
+            <button id="close-memory-detail" class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl"><i class="fas fa-times-circle"></i></button>
+            <div id="detail-media-container" class="flex-shrink-0 w-full md:w-1/2 flex items-center justify-center">
+                 <img id="detail-media-img" src="" alt="Echo Media" class="rounded-lg object-contain max-h-96 w-full">
+            </div>
+            <div class="flex-grow text-gray-800">
+                <h2 id="detail-title" class="text-3xl font-bold mb-3"></h2>
+                <p id="detail-desc" class="text-md leading-relaxed mb-4"></p>
+                <div id="elaborated-story-output" class="w-full mt-3 text-sm"></div>
+                <button id="elaborate-story-btn" class="mt-2 mb-4 px-4 py-2 bg-teal-500 text-white rounded-full shadow-md hover:bg-teal-600 transition-colors duration-200 flex items-center space-x-2"><i class="fas fa-book-reader"></i><span>✨ Lumin, Elaborate</span></button>
+                <p id="detail-contributor" class="text-sm text-gray-600 mb-1"></p>
+                <p id="detail-date" class="text-sm text-gray-600 mb-4"></p>
+                <div class="flex space-x-4 mt-4">
+                    <button class="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"><i class="fas fa-heart"></i><span>React</span></button>
+                    <button class="flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"><i class="fas fa-comment"></i><span>Comment</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed bottom-8 right-8 z-30 flex flex-col space-y-4">
+        <button id="open-add-memory-modal-btn" class="p-4 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i class="fas fa-plus text-xl"></i><span class="hidden md:inline">Add Your Echo</span>
+        </button>
+    </div>
+
+    <div id="add-memory-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] hidden p-4">
+        <div class="add-memory-modal-content bg-white rounded-xl shadow-2xl flex flex-col" style="height: auto; min-height:300px; max-height: 90vh; width:90%; max-width: 500px;">
+            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 id="add-memory-modal-title" class="text-xl font-semibold text-gray-700">Lumin: Share Your Echo</h2>
+                <button id="close-add-memory-modal-btn" class="text-gray-500 hover:text-gray-800 text-2xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="form-step-container" class="flex-grow overflow-y-auto"></div>
+            <div id="memory-preview-summary" class="p-3 border-t border-b border-gray-200 bg-gray-50 text-xs text-gray-600 hidden">
+                <p><strong>Name:</strong> <span id="preview-name"></span></p>
+                <p><strong>Echo Title:</strong> <span id="preview-title-summary"></span></p>
+            </div>
+            <div class="p-4 border-t border-gray-200 flex justify-between items-center">
+                <button id="prev-step-btn" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors">Previous</button>
+                <div id="step-indicator" class="text-sm text-gray-500">Step 1 / X</div>
+                <button id="next-step-btn" class="px-5 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors">Next</button>
+                <button id="save-memory-btn" class="px-5 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors hidden">Save Echo</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] hidden p-4">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
+            <h3 id="message-modal-title" class="text-xl font-semibold mb-3">Message</h3>
+            <p id="message-modal-text" class="text-gray-700 mb-4"></p>
+            <button id="message-modal-close" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Close</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const centralPortraitFrame = document.querySelector('.central-portrait-frame');
+            const centralPortraitImg = document.getElementById('central-portrait-img');
+            const centralPortraitName = document.getElementById('central-portrait-name');
+
+            const mainBio = document.getElementById('main-bio')?.textContent; 
+            const elaborateStoryBtn = document.getElementById('elaborate-story-btn');
+            const elaboratedStoryOutput = document.getElementById('elaborated-story-output');
+            const detailOverlay = document.getElementById('memory-detail-overlay');
+            const closeDetailButton = document.getElementById('close-memory-detail');
+            
+            const detailMediaContainer = document.getElementById('detail-media-container');
+            let detailMediaElement = document.getElementById('detail-media-img'); 
+
+            const detailTitle = document.getElementById('detail-title');
+            const detailDesc = document.getElementById('detail-desc');
+            const detailContributor = document.getElementById('detail-contributor');
+            const detailDate = document.getElementById('detail-date');
+            const messageModal = document.getElementById('message-modal');
+            const messageModalTitle = document.getElementById('message-modal-title');
+            const messageModalText = document.getElementById('message-modal-text');
+            const messageModalClose = document.getElementById('message-modal-close');
+
+            const openAddMemoryModalBtn = document.getElementById('open-add-memory-modal-btn');
+            const addMemoryModal = document.getElementById('add-memory-modal');
+            const addMemoryModalTitleEl = document.getElementById('add-memory-modal-title');
+            const closeAddMemoryModalBtn = document.getElementById('close-add-memory-modal-btn');
+            const formStepContainer = document.getElementById('form-step-container');
+            const prevStepBtn = document.getElementById('prev-step-btn');
+            const nextStepBtn = document.getElementById('next-step-btn');
+            const saveMemoryBtn = document.getElementById('save-memory-btn');
+            const stepIndicator = document.getElementById('step-indicator');
+            const memoryPreviewSummary = document.getElementById('memory-preview-summary');
+            const previewNameEl = document.getElementById('preview-name');
+            const previewTitleSummaryEl = document.getElementById('preview-title-summary');
+
+            const sidebar = document.getElementById('browse-sidebar');
+            const sidebarToggleBtn = document.getElementById('browse-sidebar-toggle');
+            const mainContentArea = document.getElementById('main-content-area');
+            const echoConstellationView = document.getElementById('echo-constellation'); 
+            
+            const timelineViewPlaceholder = document.getElementById('timeline-view-placeholder'); 
+            const contributorsViewPlaceholder = document.getElementById('contributors-view-placeholder'); 
+            const mapViewPlaceholder = document.getElementById('map-view-placeholder'); 
+            const categoriesViewPlaceholder = document.getElementById('categories-view-placeholder'); 
+            const allAlternativePlaceholders = [timelineViewPlaceholder, contributorsViewPlaceholder, mapViewPlaceholder, categoriesViewPlaceholder];
+            
+            const viewConstellationBtn = document.getElementById('view-constellation-btn');
+            const viewTimelineBtn = document.getElementById('view-timeline-btn');
+            const viewContributorsBtn = document.getElementById('view-contributors-btn');
+            const viewMapBtn = document.getElementById('view-map-btn');
+            const viewCategoriesBtn = document.getElementById('view-categories-btn');
+            const allViewButtons = [viewConstellationBtn, viewTimelineBtn, viewContributorsBtn, viewMapBtn, viewCategoriesBtn];
+
+            const detailedProfileView = document.getElementById('detailed-profile-view');
+            const cardViewToggleBtn = document.getElementById('card-view-toggle-btn'); 
+            const backToHoowozBtn = document.getElementById('back-to-hoowoz-btn'); 
+            const detailedTimelineItemsContainer = document.getElementById('detailed-timeline-items');
+
+            let currentCentralCardState = 'short'; // 'short', 'minimal', 'full' (when on detailed page)
+
+
+            let currentStep = 0;
+            let newMemoryData = {};
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+            } else {
+                console.warn("Speech Recognition API not supported in this browser.");
+            }
+            let currentListeningButton = null; 
+
+            function createAIPrompt(text) {
+                return `
+                    <div class="ai-prompt-container">
+                        <i class="fas fa-feather-alt ai-icon"></i>
+                        <p class="ai-prompt">${text}</p>
+                    </div>`;
+            }
+            
+            function createTextInput(id, placeholder, value, includeSpeech = true) {
+                let speechButtonHtml = '';
+                if (includeSpeech && SpeechRecognition) {
+                    speechButtonHtml = `<button type="button" class="speech-to-text-btn" data-target="${id}" title="Speak"><i class="fas fa-microphone"></i></button>`;
+                }
+                return `
+                    <div class="input-wrapper">
+                        <input type="text" id="${id}" name="${id}" placeholder="${placeholder}" value="${value || ''}">
+                        ${speechButtonHtml}
+                    </div>`;
+            }
+
+            function createTextarea(id, placeholder, value, includeSpeech = true) {
+                 let speechButtonHtml = '';
+                if (includeSpeech && SpeechRecognition) {
+                    speechButtonHtml = `<button type="button" class="speech-to-text-btn" data-target="${id}" title="Speak"><i class="fas fa-microphone"></i></button>`;
+                }
+                return `
+                    <div class="input-wrapper">
+                        <textarea id="${id}" name="${id}" placeholder="${placeholder}">${value || ''}</textarea>
+                        ${speechButtonHtml}
+                    </div>`;
+            }
+
+            const steps = [
+                 { 
+                    id: 'userName',
+                    aiPrompt: () => createAIPrompt("<strong>Lumin:</strong> Welcome, friend. I'm Lumin, here to help you share a precious echo for Hoowoz. To begin, could you tell me your name?"),
+                    input: () => createTextInput('userName', 'Your Name', newMemoryData.userName || ''),
+                    validate: (inputEl) => inputEl && inputEl.value.trim() !== '',
+                    onNext: (inputEl) => { 
+                        newMemoryData.userName = inputEl.value; 
+                        if (previewNameEl) previewNameEl.textContent = newMemoryData.userName; 
+                    }
+                },
+                { 
+                    id: 'relationship',
+                    aiPrompt: () => createAIPrompt(`<strong>Lumin:</strong> Thank you, ${newMemoryData.userName || 'friend'}. How were you connected to Hoowoz?`),
+                    input: () => createTextInput('relationship', 'e.g., Friend, Family, Colleague', newMemoryData.relationship || ''),
+                    validate: (inputEl) => inputEl && inputEl.value.trim() !== '',
+                    onNext: (inputEl) => { newMemoryData.relationship = inputEl.value; }
+                },
+                { 
+                    id: 'memoryType',
+                    aiPrompt: () => createAIPrompt(`<strong>Lumin:</strong> It's good to understand that, ${newMemoryData.userName || 'friend'}. Would you like to share a general condolence, or is there a specific echo of a memory you wish to preserve?`),
+                    input: () => `
+                        <div class="options-buttons mt-4">
+                            <button data-value="condolence" class="browse-sidebar-item ${newMemoryData.memoryType === 'condolence' ? 'selected' : ''}">General Condolence</button>
+                            <button data-value="specific" class="browse-sidebar-item ${newMemoryData.memoryType === 'specific' ? 'selected' : ''}">Specific Echo (Memory)</button>
+                        </div>`,
+                    validate: () => newMemoryData.memoryType !== '',
+                    onNext: (selectedButton) => newMemoryData.memoryType = selectedButton.dataset.value,
+                    isOptionButtons: true
+                },
+                { 
+                    id: 'memoryWhen',
+                    aiPrompt: () => createAIPrompt("<strong>Lumin:</strong> A specific echo, how lovely. Approximately when did this memory take place? Even a season or year helps place it in the Tapestry of Echoes for Hoowoz."),
+                    input: () => createTextInput('memoryWhen', 'e.g., Summer 2010, Last Christmas', newMemoryData.memoryWhen || ''),
+                    shouldSkip: () => newMemoryData.memoryType !== 'specific',
+                    validate: (inputEl) => (newMemoryData.memoryType !== 'specific' || (inputEl && inputEl.value.trim() !== '')),
+                    onNext: (inputEl) => { newMemoryData.memoryWhen = inputEl.value; }
+                },
+                { 
+                    id: 'memoryDescription',
+                    aiPrompt: () => createAIPrompt(`<strong>Lumin:</strong> Please take your time, ${newMemoryData.userName || 'friend'}. Tell me about this echo. What happened? What details shine brightest for you? (If it's a general condolence, please share your heartfelt words here).`),
+                    input: () => createTextarea('memoryDescription', 'Share your thoughts or memory details...', newMemoryData.memoryDescription || ''),
+                    validate: (inputEl) => inputEl && inputEl.value.trim() !== '',
+                    onNext: (inputEl) => { newMemoryData.memoryDescription = inputEl.value; }
+                },
+                { 
+                    id: 'memoryMedia', 
+                    aiPrompt: () => createAIPrompt("<strong>Lumin:</strong> That's a wonderful share. To make this echo even more vivid, do you have any photos, videos, or sound recordings associated with it? This is entirely optional, of course."),
+                    input: () => `
+                        <div id="memory-preview-image-container" class="my-3">
+                           ${newMemoryData.memoryMediaName ? `<p class="text-sm text-gray-500">Uploaded: ${newMemoryData.memoryMediaName}</p>` : ''}
+                        </div>
+                        <input type="file" id="memoryMediaFile" class="hidden" accept="image/*,video/*,audio/*">
+                        <button id="upload-media-btn-step" class="p-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors text-sm flex items-center justify-center space-x-1 w-full md:w-auto mx-auto">
+                            <i class="fas fa-photo-video"></i> <span>${newMemoryData.memoryMediaName ? 'Change Media File' : 'Upload Media (Optional)'}</span>
+                        </button>`,
+                    shouldSkip: () => newMemoryData.memoryType !== 'specific',
+                    validate: () => true, 
+                    onNext: () => {}, 
+                    onRender: () => {
+                        document.getElementById('upload-media-btn-step')?.addEventListener('click', () => document.getElementById('memoryMediaFile').click());
+                        document.getElementById('memoryMediaFile')?.addEventListener('change', handleStepMediaUpload);
+                    }
+                },
+                { 
+                    id: 'memoryTitle', // ID for the step configuration
+                    aiPrompt: () => createAIPrompt("<strong>Lumin:</strong> We're nearly there. How would you like to title this echo for Hoowoz?"),
+                    input: () => createTextInput('memoryTitle', 'e.g., Beach Trip in July, Kind Words', newMemoryData.memoryTitle || ''), // ID for the input element
+                    validate: (inputEl) => inputEl && inputEl.value.trim() !== '',
+                    onNext: (inputEl) => { 
+                        newMemoryData.memoryTitle = inputEl.value; 
+                        if (previewTitleSummaryEl) previewTitleSummaryEl.textContent = newMemoryData.memoryTitle; 
+                    }
+                },
+                { 
+                    id: 'review',
+                    aiPrompt: () => createAIPrompt(`<strong>Lumin:</strong> Here is the echo you've shared, ${newMemoryData.userName || 'friend'}. Please review it. Does it resonate correctly before we add it to Hoowoz's Tapestry of Echoes?`),
+                    input: () => `
+                        <div class="text-left p-4 bg-gray-50 rounded-lg shadow my-4 text-sm">
+                            <p><strong>Your Name:</strong> ${newMemoryData.userName || 'N/A'}</p>
+                            <p><strong>Relationship:</strong> ${newMemoryData.relationship || 'N/A'}</p>
+                            <p><strong>Type:</strong> ${newMemoryData.memoryType === 'specific' ? 'Specific Echo (Memory)' : (newMemoryData.memoryType === 'condolence' ? 'General Condolence' : 'N/A')}</p>
+                            ${newMemoryData.memoryType === 'specific' ? `<p><strong>When:</strong> ${newMemoryData.memoryWhen || 'N/A'}</p>` : ''}
+                            <p><strong>Echo Title:</strong> ${newMemoryData.memoryTitle || 'N/A'}</p>
+                            <p class="mt-2"><strong>Details/Message:</strong></p>
+                            <p class="whitespace-pre-wrap">${newMemoryData.memoryDescription || 'N/A'}</p>
+                            ${newMemoryData.memoryMedia && newMemoryData.memoryMediaType ? `
+                                <p class="mt-2"><strong>Media:</strong></p>
+                                <div id="review-media-preview" class="flex justify-center my-2"></div>`
+                            : ''}
+                        </div>`,
+                    validate: () => true,
+                    onRender: () => {
+                        if (newMemoryData.memoryMedia && newMemoryData.memoryMediaType) {
+                            const previewContainer = document.getElementById('review-media-preview');
+                            if(previewContainer) {
+                                previewContainer.innerHTML = ''; 
+                                let mediaElementRev;
+                                if (newMemoryData.memoryMediaType.startsWith('image/')) mediaElementRev = document.createElement('img');
+                                else if (newMemoryData.memoryMediaType.startsWith('video/')) { mediaElementRev = document.createElement('video'); mediaElementRev.controls = true; }
+                                else if (newMemoryData.memoryMediaType.startsWith('audio/')) { mediaElementRev = document.createElement('audio'); mediaElementRev.controls = true; }
+                                
+                                if (mediaElementRev) {
+                                    mediaElementRev.src = newMemoryData.memoryMedia;
+                                    mediaElementRev.className = 'rounded-lg object-contain max-h-40 mx-auto';
+                                    previewContainer.appendChild(mediaElementRev);
+                                }
+                            }
+                        }
+                    }
+                }
+            ];
+
+            function showMessage(title, text) {
+                if(messageModalTitle && messageModalText && messageModal && messageModalClose) {
+                    messageModalTitle.textContent = title;
+                    messageModalText.textContent = text;
+                    messageModal.classList.remove('hidden');
+                }
+            }
+           if(messageModalClose) messageModalClose.addEventListener('click', () => messageModal.classList.add('hidden'));
+
+            const GEMINI_API_KEY = ""; 
+            const API_URL_GEMINI = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+            async function callGeminiAPI(prompt, buttonElement, outputElementOrFunction) {
+                 const originalButtonText = buttonElement ? buttonElement.innerHTML : null;
+                if (buttonElement) {
+                    buttonElement.innerHTML = '<div class="spinner mx-auto"></div>';
+                    buttonElement.disabled = true;
+                }
+                 if (outputElementOrFunction && typeof outputElementOrFunction !== 'function') {
+                     outputElementOrFunction.innerHTML = '<div class="text-center text-gray-500">Lumin is thinking...</div>';
+                }
+                try {
+                    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                    const response = await fetch(API_URL_GEMINI, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`API request failed: ${errorData?.error?.message || response.statusText}`);
+                    }
+                    const result = await response.json();
+                    if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        if (typeof outputElementOrFunction === 'function') {
+                             outputElementOrFunction(text);
+                        } else if (outputElementOrFunction) {
+                            outputElementOrFunction.innerHTML = `<div class="generated-content-box">${text.replace(/\n/g, '<br>')}</div>`;
+                        }
+                        return text;
+                    } else { throw new Error("Could not extract text from API response."); }
+                } catch (error) {
+                    console.error('Error calling Gemini API:', error);
+                    if (outputElementOrFunction && typeof outputElementOrFunction !== 'function') {
+                        outputElementOrFunction.innerHTML = `<div class="text-red-500 text-sm">Error: ${error.message}</div>`;
+                    }
+                    showMessage("API Error", `Lumin encountered a hiccup: ${error.message}`);
+                } finally {
+                    if (buttonElement) {
+                        buttonElement.innerHTML = originalButtonText;
+                        buttonElement.disabled = false;
+                    }
+                }
+                return null;
+            }
+
+            function handleStepMediaUpload(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        newMemoryData.memoryMedia = e.target.result;
+                        newMemoryData.memoryMediaName = file.name;
+                        newMemoryData.memoryMediaType = file.type;
+                        const currentStepPreviewContainer = document.getElementById('memory-preview-image-container');
+                        if(currentStepPreviewContainer) currentStepPreviewContainer.innerHTML = `<p class="text-sm text-gray-500">Selected: ${file.name}</p>`;
+                        const uploadBtnStep = document.getElementById('upload-media-btn-step');
+                        if(uploadBtnStep && uploadBtnStep.querySelector('span')) uploadBtnStep.querySelector('span').textContent = 'Change Media File';
+                    }
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            function renderCurrentStep() {
+                const step = steps[currentStep];
+                if (!step || !formStepContainer) return;
+
+                formStepContainer.innerHTML = `<div class="form-step active">${step.aiPrompt()}${step.input()}</div>`;
+                if (step.onRender) step.onRender();
+
+                if (step.isOptionButtons) {
+                    formStepContainer.querySelectorAll('.options-buttons button').forEach(button => {
+                        button.addEventListener('click', () => {
+                            formStepContainer.querySelectorAll('.options-buttons button').forEach(btn => btn.classList.remove('selected'));
+                            button.classList.add('selected');
+                            if (step.onNext) step.onNext(button); 
+                        });
+                    });
+                } else {
+                    formStepContainer.querySelectorAll('.speech-to-text-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const targetId = e.currentTarget.dataset.target;
+                            const targetInput = document.getElementById(targetId);
+                            if(targetInput) startSpeechRecognition(targetInput, e.currentTarget);
+                        });
+                    });
+                }
+                if(stepIndicator) stepIndicator.textContent = `Step ${currentStep + 1} / ${steps.length}`;
+                if(prevStepBtn) prevStepBtn.style.visibility = currentStep === 0 ? 'hidden' : 'visible';
+                if(nextStepBtn) nextStepBtn.style.display = currentStep === steps.length - 1 ? 'none' : 'inline-flex';
+                if(saveMemoryBtn) saveMemoryBtn.style.display = currentStep === steps.length - 1 ? 'inline-flex' : 'none';
+                if(memoryPreviewSummary) memoryPreviewSummary.classList.toggle('hidden', !(newMemoryData.userName || newMemoryData.memoryTitle));
+            }
+            
+            function startSpeechRecognition(targetInputElement, buttonElement) {
+                if (!recognition) {
+                    showMessage("Speech Not Supported", "Sorry, your browser doesn't support speech-to-text.");
+                    return;
+                }
+                if (currentListeningButton) { 
+                    currentListeningButton.classList.remove('listening');
+                    currentListeningButton.innerHTML = '<i class="fas fa-microphone"></i>';
+                    recognition.stop();
+                }
+
+                currentListeningButton = buttonElement;
+                currentListeningButton.classList.add('listening');
+                currentListeningButton.innerHTML = '<i class="fas fa-stop-circle"></i>'; 
+
+                recognition.onresult = (event) => {
+                    const speechResult = event.results[0][0].transcript;
+                    targetInputElement.value += (targetInputElement.value ? ' ' : '') + speechResult; 
+                };
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error', event.error);
+                    showMessage("Speech Error", "Lumin had trouble understanding: " + event.error);
+                };
+                recognition.onend = () => {
+                    if (currentListeningButton) {
+                        currentListeningButton.classList.remove('listening');
+                        currentListeningButton.innerHTML = '<i class="fas fa-microphone"></i>';
+                    }
+                    currentListeningButton = null;
+                };
+                recognition.start();
+            }
+
+
+            function handleNextStep() {
+                const stepConf = steps[currentStep];
+                if(!stepConf || !formStepContainer) return;
+                
+                let currentInputEl; 
+
+                if (stepConf.isOptionButtons) {
+                    if (stepConf.validate && !stepConf.validate()) { 
+                        showMessage("Information Needed", "Lumin needs a selection to continue.");
+                        return;
+                    }
+                } else { 
+                     currentInputEl = formStepContainer.querySelector(`#${stepConf.id}`); 
+                     if (stepConf.validate && !stepConf.validate(currentInputEl)) { 
+                        showMessage("Information Needed", "Lumin needs this information to proceed.");
+                        return;
+                    }
+                    if (stepConf.onNext && currentInputEl && stepConf.id !== 'memoryMedia') { 
+                         stepConf.onNext(currentInputEl);
+                    }
+                }
+
+                if (currentStep < steps.length - 1) {
+                    let nextStepIndex = currentStep + 1;
+                    while(nextStepIndex < steps.length && steps[nextStepIndex]?.shouldSkip && steps[nextStepIndex].shouldSkip()) {
+                        nextStepIndex++;
+                    }
+                    if (nextStepIndex < steps.length) {
+                        currentStep = nextStepIndex;
+                    } else { 
+                        currentStep = steps.length - 1; 
+                    }
+                    renderCurrentStep();
+                }
+            }
+
+            function handlePrevStep() {
+                 if (currentStep > 0) {
+                    let prevStepIndex = currentStep - 1;
+                    while(prevStepIndex > 0 && steps[prevStepIndex]?.shouldSkip && steps[prevStepIndex].shouldSkip()) {
+                        prevStepIndex--;
+                    }
+                    currentStep = prevStepIndex; 
+                    renderCurrentStep();
+                }
+            }
+
+            if(openAddMemoryModalBtn) {
+                openAddMemoryModalBtn.addEventListener('click', () => {
+                    currentStep = 0;
+                    newMemoryData = { userName: '', relationship: '', memoryType: '', memoryWhen: '', memoryDescription: '', memoryMedia: null, memoryMediaName: '', memoryMediaType: '', memoryTitle: '' };
+                    if(previewNameEl) previewNameEl.textContent = '';
+                    if(previewTitleSummaryEl) previewTitleSummaryEl.textContent = '';
+                    if(addMemoryModal) addMemoryModal.classList.remove('hidden');
+                    if(addMemoryModalTitleEl) addMemoryModalTitleEl.textContent = "Lumin: Share Your Echo";
+                    renderCurrentStep(); 
+                });
+            }
+
+            if(closeAddMemoryModalBtn) closeAddMemoryModalBtn.addEventListener('click', () => addMemoryModal.classList.add('hidden'));
+            if(nextStepBtn) nextStepBtn.addEventListener('click', handleNextStep);
+            if(prevStepBtn) prevStepBtn.addEventListener('click', handlePrevStep);
+            if(saveMemoryBtn) {
+                saveMemoryBtn.addEventListener('click', () => {
+                    if (!newMemoryData.userName || !newMemoryData.memoryTitle || !newMemoryData.memoryDescription) {
+                         showMessage("Incomplete Echo", "Lumin needs a Name, Title, and Description for your echo. Please review.");
+                         return;
+                    }
+                    const newEchoNode = document.createElement('div');
+                    const sizes = ['small', 'medium', 'large'];
+                    const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
+                    newEchoNode.className = `echo-node ${randomSize} group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto`;
+                    
+                    const top = Math.random() * 70 + 15; 
+                    const left = Math.random() * 70 + 15;
+                    newEchoNode.style.top = `${top}%`;
+                    newEchoNode.style.left = `${left}%`;
+                    
+                    newEchoNode.dataset.title = newMemoryData.memoryTitle;
+                    newEchoNode.dataset.desc = newMemoryData.memoryDescription;
+                    newEchoNode.dataset.contributor = `Shared by: ${newMemoryData.userName} (${newMemoryData.relationship || 'N/A'})`;
+                    newEchoNode.dataset.date = newMemoryData.memoryWhen || new Date().toLocaleDateString();
+                    
+                    let thumbnailContent = '';
+                    if (newMemoryData.memoryMediaType && newMemoryData.memoryMediaType.startsWith('image/')) {
+                        newEchoNode.dataset.type = 'photo'; newEchoNode.dataset.src = newMemoryData.memoryMedia;
+                        thumbnailContent = `<img src="${newMemoryData.memoryMedia}" alt="Echo Thumbnail" class="echo-thumbnail-img">`;
+                    } else if (newMemoryData.memoryMediaType && newMemoryData.memoryMediaType.startsWith('video/')) {
+                        newEchoNode.dataset.type = 'video'; newEchoNode.dataset.src = newMemoryData.memoryMedia;
+                        thumbnailContent = `<i class="fas fa-play text-blue-300 echo-thumbnail-icon"></i>`;
+                    } else if (newMemoryData.memoryMediaType && newMemoryData.memoryMediaType.startsWith('audio/')) {
+                        newEchoNode.dataset.type = 'audio'; newEchoNode.dataset.src = newMemoryData.memoryMedia;
+                        thumbnailContent = `<i class="fas fa-volume-up text-green-300 echo-thumbnail-icon"></i>`;
+                    } else { 
+                        newEchoNode.dataset.type = 'text'; 
+                        newEchoNode.dataset.src = `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(newMemoryData.memoryTitle.substring(0,20))}`; 
+                        const iconClass = newMemoryData.memoryType === 'condolence' ? 'fa-comment-alt' : 'fa-feather-alt'; 
+                        thumbnailContent = `<i class="fas ${iconClass} text-purple-300 echo-thumbnail-icon"></i>`;
+                    }
+                    newEchoNode.innerHTML = `${thumbnailContent}<span class="echo-title">${newMemoryData.memoryTitle}</span>`;
+                    
+                    if(echoConstellationView) echoConstellationView.appendChild(newEchoNode);
+                    setupEchoNodeClickListener(newEchoNode); 
+                    
+                    showMessage("Echo Saved", `Thank you, ${newMemoryData.userName}. Lumin has carefully preserved your echo: "${newMemoryData.memoryTitle}".`);
+                    if(addMemoryModal) addMemoryModal.classList.add('hidden');
+                });
+            }
+
+            // --- View Switching Logic ---
+             function getAllEchosData() {
+                const echos = [];
+                document.querySelectorAll('#echo-constellation .echo-node').forEach(node => {
+                    echos.push({
+                        title: node.dataset.title || "Untitled Echo",
+                        description: node.dataset.desc || "No description.",
+                        contributor: node.dataset.contributor || "Unknown",
+                        date: node.dataset.date || "Undated",
+                        type: node.dataset.type || "text",
+                        src: node.dataset.src || "",
+                        thumbnailHTML: node.children[0] ? node.children[0].outerHTML.replace('class="echo-thumbnail-img"', 'class="w-full h-full object-cover rounded-md"').replace('class="echo-thumbnail-icon"', 'class="text-2xl"') : '<i class="fas fa-question text-gray-400 text-2xl"></i>'
+                    });
+                });
+                return echos;
+            }
+
+            function renderTimelineView(container, echos) {
+                container.innerHTML = `<div class="alternative-view-content-wrapper"><h2>Echos by Timeline</h2><div id="timeline-items-list"></div></div>`;
+                const listContainer = container.querySelector('#timeline-items-list');
+                if (!listContainer) return;
+
+                const sortedEchos = echos.sort((a, b) => {
+                    const dateA = new Date(a.date);
+                    const dateB = new Date(b.date);
+                    if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+                    if (isNaN(dateA.getTime())) return 1; 
+                    if (isNaN(dateB.getTime())) return -1;
+                    return dateB - dateA; 
+                });
+
+                if (sortedEchos.length === 0) {
+                    listContainer.innerHTML = "<p class='text-center p-4'>No echos with dates to display in timeline.</p>";
+                    return;
+                }
+
+                sortedEchos.forEach(echo => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'alternative-view-item';
+                    itemDiv.innerHTML = `
+                        <div class="alternative-view-item-thumbnail">${echo.thumbnailHTML}</div>
+                        <div class="alternative-view-item-details">
+                            <p class="title">${echo.title}</p>
+                            <p class="meta">By: ${echo.contributor} | Date: ${echo.date}</p>
+                            <p class="description">${echo.description.substring(0, 100)}${echo.description.length > 100 ? '...' : ''}</p>
+                        </div>
+                    `;
+                    listContainer.appendChild(itemDiv);
+                });
+            }
+
+            function renderContributorsView(container, echos) {
+                container.innerHTML = `<div class="alternative-view-content-wrapper"><h2>Echos by Contributor</h2><div id="contributors-list"></div></div>`;
+                const listContainer = container.querySelector('#contributors-list');
+                 if (!listContainer) return;
+
+                const echosByContributor = echos.reduce((acc, echo) => {
+                    const contributor = echo.contributor || "Unknown Contributor";
+                    if (!acc[contributor]) {
+                        acc[contributor] = [];
+                    }
+                    acc[contributor].push(echo);
+                    return acc;
+                }, {});
+
+                if (Object.keys(echosByContributor).length === 0) {
+                    listContainer.innerHTML = "<p class='text-center p-4'>No echos to display by contributor.</p>";
+                    return;
+                }
+
+                for (const contributor in echosByContributor) {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'contributor-group';
+                    groupDiv.innerHTML = `<h3>${contributor}</h3>`;
+                    echosByContributor[contributor].forEach(echo => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'alternative-view-item';
+                        itemDiv.innerHTML = `
+                            <div class="alternative-view-item-thumbnail">${echo.thumbnailHTML}</div>
+                            <div class="alternative-view-item-details">
+                                <p class="title">${echo.title}</p>
+                                <p class="meta">Date: ${echo.date}</p>
+                                <p class="description">${echo.description.substring(0, 100)}${echo.description.length > 100 ? '...' : ''}</p>
+                            </div>
+                        `;
+                        groupDiv.appendChild(itemDiv);
+                    });
+                    listContainer.appendChild(groupDiv);
+                }
+            }
+
+            function renderMapView(container, echos) {
+                container.innerHTML = `
+                    <div class="alternative-view-content-wrapper">
+                        <h2>Echos on a Map</h2>
+                        <p class="mb-4">If Echos included location data, they would be displayed on an interactive map here, showing the geographical spread of memories and significant places in Hoowoz's life.</p>
+                        <div class="mock-map-container">
+                            <img src="https://placehold.co/600x400/777799/ffffff?text=Conceptual+Map+View" alt="Conceptual Map View">
+                        </div>
+                        <p class="mt-4 text-sm">Currently, location tagging is not implemented.</p>
+                    </div>`;
+            }
+
+            function renderCategoriesView(container, echos) {
+                 container.innerHTML = `
+                    <div class="alternative-view-content-wrapper">
+                        <h2>Echos by Category</h2>
+                        <p class="mb-4">Imagine Echos could be tagged with categories like "Family," "Work," "Travel," or "Hobbies." This view would allow filtering and exploring those themes.</p>
+                        <div class="category-list mb-4">
+                            <button>Family</button>
+                            <button>Work/Achievements</button>
+                            <button>Travel</button>
+                            <button>Hobbies</button>
+                            <button>Words of Wisdom</button>
+                        </div>
+                        <p class="text-sm">Currently, echo categorization is not implemented.</p>
+                    </div>`;
+            }
+
+
+            if(sidebarToggleBtn && sidebar && mainContentArea && detailedProfileView) {
+                sidebarToggleBtn.addEventListener('click', () => {
+                    sidebar.classList.toggle('collapsed');
+                    mainContentArea.classList.toggle('sidebar-collapsed');
+                    detailedProfileView.classList.toggle('sidebar-collapsed'); 
+                    const icon = sidebarToggleBtn.querySelector('i');
+                    if (sidebar.classList.contains('collapsed')) {
+                        icon.classList.remove('fa-angle-double-left');
+                        icon.classList.add('fa-angle-double-right');
+                        sidebarToggleBtn.setAttribute('aria-label', 'Expand sidebar');
+                    } else {
+                        icon.classList.remove('fa-angle-double-right');
+                        icon.classList.add('fa-angle-double-left');
+                        sidebarToggleBtn.setAttribute('aria-label', 'Collapse sidebar');
+                    }
+                });
+            }
+            
+            function setActiveSidebarView(activeButton, activeViewElement) {
+                allViewButtons.forEach(btn => btn.classList.remove('active-view'));
+                if(activeButton) activeButton.classList.add('active-view');
+                
+                if(echoConstellationView) {
+                    echoConstellationView.style.display = 'none'; 
+                    document.querySelectorAll('.echo-node').forEach(node => node.style.opacity = '0');
+                }
+                allAlternativePlaceholders.forEach(view => { if(view) view.style.display = 'none';});
+                if(detailedProfileView) detailedProfileView.style.display = 'none';
+                if(mainContentArea) mainContentArea.style.display = 'flex'; 
+
+                const echosData = getAllEchosData();
+
+                if (activeViewElement === echoConstellationView) {
+                    if(echoConstellationView) {
+                        echoConstellationView.style.display = 'block'; 
+                        document.querySelectorAll('.echo-node').forEach(node => node.style.opacity = '1');
+                    }
+                     if(centralPortraitFrame) centralPortraitFrame.style.display = 'flex'; 
+                } else if (activeViewElement) { 
+                    if(centralPortraitFrame) centralPortraitFrame.style.display = 'none'; 
+                    if (activeViewElement === timelineViewPlaceholder) renderTimelineView(timelineViewPlaceholder, echosData);
+                    else if (activeViewElement === contributorsViewPlaceholder) renderContributorsView(contributorsViewPlaceholder, echosData);
+                    else if (activeViewElement === mapViewPlaceholder) renderMapView(mapViewPlaceholder, echosData);
+                    else if (activeViewElement === categoriesViewPlaceholder) renderCategoriesView(categoriesViewPlaceholder, echosData);
+                    activeViewElement.style.display = 'block';
+                }
+            }
+
+            if(viewConstellationBtn && echoConstellationView) viewConstellationBtn.addEventListener('click', () => setActiveSidebarView(viewConstellationBtn, echoConstellationView));
+            if(viewTimelineBtn && timelineViewPlaceholder) viewTimelineBtn.addEventListener('click', () => setActiveSidebarView(viewTimelineBtn, timelineViewPlaceholder));
+            if(viewContributorsBtn && contributorsViewPlaceholder) viewContributorsBtn.addEventListener('click', () => setActiveSidebarView(viewContributorsBtn, contributorsViewPlaceholder));
+            if(viewMapBtn && mapViewPlaceholder) viewMapBtn.addEventListener('click', () => setActiveSidebarView(viewMapBtn, mapViewPlaceholder));
+            if(viewCategoriesBtn && categoriesViewPlaceholder) viewCategoriesBtn.addEventListener('click', () => setActiveSidebarView(viewCategoriesBtn, categoriesViewPlaceholder));
+            
+            if(viewConstellationBtn && echoConstellationView) {
+                 setActiveSidebarView(viewConstellationBtn, echoConstellationView);
+            }
+
+            function setupEchoNodeClickListener(node) { 
+                 node.addEventListener('click', () => {
+                    if (!echoConstellationView || echoConstellationView.style.display !== 'block' || node.style.opacity === '0') return;
+                    if (!detailMediaContainer || !detailTitle || !detailDesc || !detailContributor || !detailDate || !detailOverlay) return;
+                    
+                    detailMediaContainer.innerHTML = '<img id="detail-media-img" src="" alt="Echo Media" class="rounded-lg object-contain max-h-96 w-full">';
+                    detailMediaElement = document.getElementById('detail-media-img');
+
+                    const dataType = node.dataset.type;
+                    const dataSrc = node.dataset.src || `https://placehold.co/400x300/cccccc/333333?text=No+Media`;
+
+                    if (dataType === 'video') {
+                        const videoEl = document.createElement('video');
+                        videoEl.src = dataSrc;
+                        videoEl.controls = true;
+                        videoEl.className = 'rounded-lg object-contain max-h-96 w-full';
+                        detailMediaContainer.innerHTML = ''; 
+                        detailMediaContainer.appendChild(videoEl);
+                    } else if (dataType === 'audio') {
+                        const audioEl = document.createElement('audio');
+                        audioEl.src = dataSrc;
+                        audioEl.controls = true;
+                        audioEl.className = 'rounded-lg w-full mt-4';
+                        detailMediaContainer.innerHTML = ''; 
+                        detailMediaContainer.appendChild(audioEl);
+                    } else { 
+                        if(detailMediaElement) detailMediaElement.src = dataSrc;
+                    }
+
+                    detailTitle.textContent = node.dataset.title || "Untitled Echo";
+                    detailDesc.textContent = node.dataset.desc || "No description provided.";
+                    detailContributor.textContent = node.dataset.contributor || "Unknown Contributor";
+                    detailDate.textContent = node.dataset.date || "Unknown Date";
+                    if(elaboratedStoryOutput) elaboratedStoryOutput.innerHTML = ''; 
+                    detailOverlay.classList.remove('hidden');
+                });
+            }
+            document.querySelectorAll('.echo-node').forEach(setupEchoNodeClickListener); 
+
+            if(elaborateStoryBtn && detailDesc && detailTitle && elaboratedStoryOutput) {
+                elaborateStoryBtn.addEventListener('click', () => {
+                    const memoryDescription = detailDesc.textContent;
+                    const memoryTitleText = detailTitle.textContent;
+                    const prompt = `This is an echo from Hoowoz, titled "${memoryTitleText}", described as: "${memoryDescription}". As Lumin, the AI memory keeper, please elaborate on this echo, expanding it into a more vivid and engaging short story (around 100-150 words). Focus on evoking emotions and painting a picture for the reader, maintaining a gentle and respectful tone.`;
+                    callGeminiAPI(prompt, elaborateStoryBtn, elaboratedStoryOutput);
+                });
+            }
+            if(closeDetailButton && detailOverlay) closeDetailButton.addEventListener('click', () => detailOverlay.classList.add('hidden'));
+            if(detailOverlay) {
+                detailOverlay.addEventListener('click', (e) => { 
+                    if (e.target === detailOverlay) detailOverlay.classList.add('hidden');
+                });
+            }
+
+            const sampleTimelineData = [
+                { date: "March 10, 1950", title: "Born in Dublin", description: "Hoowoz began their journey, bringing a spark into the world.", image: "https://placehold.co/150x100/E0E7FF/333?text=Birthplace" },
+                { date: "June 1972", title: "Graduation Day", description: "Successfully graduated with a degree in Innovative Engineering, full of dreams and aspirations.", video: "https://placehold.co/150x100/FFE0E0/333?text=Graduation+Vid" },
+                { date: "April 5, 1985", title: "First Major Invention", description: "Patented a groundbreaking device that would go on to help many. A testament to a brilliant mind.", image: "https://placehold.co/150x100/E0FFEA/333?text=Invention" },
+                { date: "September 2001", title: "Founded 'Innovate Solutions'", description: "Started a company that fostered creativity and pushed technological boundaries.", image: "https://placehold.co/150x100/FFFBE0/333?text=Company" },
+                { date: "July 2015", title: "Philanthropic Award", description: "Recognized for extensive charity work and contributions to community development.", video: "https://placehold.co/150x100/F5E1F4/333?text=Award+Ceremony" },
+                { date: "August 2023", title: "Celebrated 73rd Birthday", description: "A joyous occasion surrounded by family and friends, filled with laughter and cherished moments.", image: "https://placehold.co/150x100/D1E0FC/333?text=Birthday" }
+            ];
+
+            function populateDetailedTimeline() {
+                if (!detailedTimelineItemsContainer) return;
+                detailedTimelineItemsContainer.innerHTML = ''; 
+                sampleTimelineData.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'timeline-item';
+                    
+                    let mediaHtml = '';
+                    if (item.image) {
+                        mediaHtml = `<div class="timeline-item-media"><img src="${item.image}" alt="${item.title}" onerror="this.src='https://placehold.co/150x100/cccccc/333?text=Media+Error'; this.alt='Error loading media';"></div>`;
+                    } else if (item.video) {
+                        mediaHtml = `<div class="timeline-item-media"><img src="${item.video}" alt="${item.title} (Video)" onerror="this.src='https://placehold.co/150x100/cccccc/333?text=Video+Error'; this.alt='Error loading video';"></div>`; 
+                    }
+
+                    itemDiv.innerHTML = `
+                        ${mediaHtml}
+                        <div class="timeline-item-content">
+                            <p class="date">${item.date}</p>
+                            <h4 class="title">${item.title}</h4>
+                            <p class="description">${item.description}</p>
+                        </div>
+                    `;
+                    detailedTimelineItemsContainer.appendChild(itemDiv);
+                });
+            }
+            
+            // --- Central Portrait Card Toggle & Full Profile Navigation ---
+            if (cardViewToggleBtn && centralPortraitFrame) {
+                cardViewToggleBtn.addEventListener('click', () => {
+                    const icon = cardViewToggleBtn.querySelector('i');
+                    if (currentCentralCardState === 'short') {
+                        centralPortraitFrame.classList.add('is-minimal');
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-expand'); // Changed to fa-expand for "Go to Full Profile"
+                        cardViewToggleBtn.title = "Go to Full Profile";
+                        currentCentralCardState = 'minimal';
+                    } else if (currentCentralCardState === 'minimal') {
+                        // Go to Full Detail Page
+                        if(mainContentArea) mainContentArea.style.display = 'none'; 
+                        allAlternativePlaceholders.forEach(view => {if(view) view.style.display = 'none';}); 
+                        if(echoConstellationView) echoConstellationView.style.display = 'none';
+                        if(centralPortraitFrame) centralPortraitFrame.style.display = 'none';
+
+                        if(detailedProfileView) detailedProfileView.style.display = 'flex'; 
+                        populateDetailedTimeline(); 
+                        window.scrollTo(0, 0); 
+                        currentCentralCardState = 'full'; 
+                        // Icon on cardToggleBtn is not visible on detailed page, but we set it for when we return
+                        icon.classList.remove('fa-expand');
+                        icon.classList.add('fa-chevron-down'); // Next state will be 'short'
+                        cardViewToggleBtn.title = "Minimize Card";
+
+                    } 
+                    // Note: Transition from 'full' back to 'short' is handled by backToHoowozBtn
+                });
+            }
+
+
+            if(backToHoowozBtn && mainContentArea && detailedProfileView) { 
+                backToHoowozBtn.addEventListener('click', () => {
+                    if(detailedProfileView) detailedProfileView.style.display = 'none'; 
+                    if(mainContentArea) mainContentArea.style.display = 'flex'; 
+                    if(centralPortraitFrame) {
+                        centralPortraitFrame.style.display = 'flex'; 
+                        centralPortraitFrame.classList.remove('is-minimal'); 
+                        if(cardViewToggleBtn) {
+                           const icon = cardViewToggleBtn.querySelector('i');
+                           icon.classList.remove('fa-expand'); // Should be fa-chevron-up if coming from minimal
+                           icon.classList.remove('fa-window-close'); // Or whatever icon was for full
+                           icon.classList.add('fa-chevron-down');
+                           cardViewToggleBtn.title = "Minimize Card";
+                        }
+                    }
+                    currentCentralCardState = 'short';
+                    setActiveSidebarView(viewConstellationBtn, echoConstellationView); 
+                    window.scrollTo(0, 0); 
+                });
+            }
+            
+            // Initial setup for card toggle button if centralPortraitFrame exists
+            if (centralPortraitFrame && cardViewToggleBtn) {
+                 // Default to short view
+                centralPortraitFrame.classList.remove('is-minimal');
+                cardViewToggleBtn.querySelector('i').className = 'fas fa-chevron-down';
+                cardViewToggleBtn.title = "Minimize Card";
+                currentCentralCardState = 'short';
+            }
+
+            // Ensure modals are defined before trying to access their children
+            const memoryDetailOverlayContent = document.querySelector('#memory-detail-overlay .memory-detail-overlay-content');
+            if (!memoryDetailOverlayContent && document.getElementById('memory-detail-overlay')) { 
+                console.warn("Memory detail overlay content div not found. Some functionality might be affected.");
+            } 
+
+            const addMemoryModalContent = document.querySelector('#add-memory-modal .add-memory-modal-content');
+             if (!addMemoryModalContent && document.getElementById('add-memory-modal')) {
+                console.warn("Add memory modal content div not found. Some functionality might be affected.");
+            } 
+            
+            if (!document.getElementById('message-modal')) { 
+                console.warn("Message modal not found. Some functionality might be affected.");
+            }
+
+            // Restore full HTML for modals if they were accidentally cleared in previous steps
+            if (document.getElementById('memory-detail-overlay') && !memoryDetailOverlayContent) {
+                 document.getElementById('memory-detail-overlay').innerHTML = `
+                    <div class="memory-detail-overlay-content bg-white rounded-xl shadow-2xl p-8 relative flex flex-col md:flex-row gap-6">
+                        <button id="close-memory-detail" class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl"><i class="fas fa-times-circle"></i></button>
+                        <div id="detail-media-container" class="flex-shrink-0 w-full md:w-1/2 flex items-center justify-center">
+                             <img id="detail-media-img" src="" alt="Echo Media" class="rounded-lg object-contain max-h-96 w-full">
+                        </div>
+                        <div class="flex-grow text-gray-800">
+                            <h2 id="detail-title" class="text-3xl font-bold mb-3"></h2>
+                            <p id="detail-desc" class="text-md leading-relaxed mb-4"></p>
+                            <div id="elaborated-story-output" class="w-full mt-3 text-sm"></div>
+                            <button id="elaborate-story-btn" class="mt-2 mb-4 px-4 py-2 bg-teal-500 text-white rounded-full shadow-md hover:bg-teal-600 transition-colors duration-200 flex items-center space-x-2"><i class="fas fa-book-reader"></i><span>✨ Lumin, Elaborate</span></button>
+                            <p id="detail-contributor" class="text-sm text-gray-600 mb-1"></p>
+                            <p id="detail-date" class="text-sm text-gray-600 mb-4"></p>
+                            <div class="flex space-x-4 mt-4">
+                                <button class="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"><i class="fas fa-heart"></i><span>React</span></button>
+                                <button class="flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"><i class="fas fa-comment"></i><span>Comment</span></button>
+                            </div>
+                        </div>
+                    </div>`;
+                const newCloseDetailButton = document.getElementById('close-memory-detail');
+                if(newCloseDetailButton && detailOverlay) newCloseDetailButton.addEventListener('click', () => detailOverlay.classList.add('hidden'));
+                const newElaborateStoryBtn = document.getElementById('elaborate-story-btn');
+                 if(newElaborateStoryBtn && document.getElementById('detail-desc') && document.getElementById('detail-title') && document.getElementById('elaborated-story-output')) {
+                    newElaborateStoryBtn.addEventListener('click', () => {
+                        const memoryDescription = document.getElementById('detail-desc').textContent;
+                        const memoryTitleText = document.getElementById('detail-title').textContent;
+                        const prompt = `This is an echo from Hoowoz, titled "${memoryTitleText}", described as: "${memoryDescription}". As Lumin, the AI memory keeper, please elaborate on this echo, expanding it into a more vivid and engaging short story (around 100-150 words). Focus on evoking emotions and painting a picture for the reader, maintaining a gentle and respectful tone.`;
+                        callGeminiAPI(prompt, newElaborateStoryBtn, document.getElementById('elaborated-story-output'));
+                    });
+                }
+            }
+
+            if (document.getElementById('add-memory-modal') && !addMemoryModalContent) {
+                document.getElementById('add-memory-modal').innerHTML = `
+                    <div class="add-memory-modal-content bg-white rounded-xl shadow-2xl flex flex-col" style="height: auto; min-height:300px; max-height: 90vh; width:90%; max-width: 500px;">
+                        <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                            <h2 id="add-memory-modal-title" class="text-xl font-semibold text-gray-700">Lumin: Share Your Echo</h2>
+                            <button id="close-add-memory-modal-btn" class="text-gray-500 hover:text-gray-800 text-2xl"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div id="form-step-container" class="flex-grow overflow-y-auto"></div>
+                        <div id="memory-preview-summary" class="p-3 border-t border-b border-gray-200 bg-gray-50 text-xs text-gray-600 hidden">
+                            <p><strong>Name:</strong> <span id="preview-name"></span></p>
+                            <p><strong>Echo Title:</strong> <span id="preview-title-summary"></span></p>
+                        </div>
+                        <div class="p-4 border-t border-gray-200 flex justify-between items-center">
+                            <button id="prev-step-btn" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors">Previous</button>
+                            <div id="step-indicator" class="text-sm text-gray-500">Step 1 / X</div>
+                            <button id="next-step-btn" class="px-5 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors">Next</button>
+                            <button id="save-memory-btn" class="px-5 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors hidden">Save Echo</button>
+                        </div>
+                    </div>`;
+                const newCloseAddMemoryModalBtn = document.getElementById('close-add-memory-modal-btn');
+                if(newCloseAddMemoryModalBtn && addMemoryModal) newCloseAddMemoryModalBtn.addEventListener('click', () => addMemoryModal.classList.add('hidden'));
+
+                const newPrevStepBtn = document.getElementById('prev-step-btn');
+                if(newPrevStepBtn) newPrevStepBtn.addEventListener('click', handlePrevStep);
+                const newNextStepBtn = document.getElementById('next-step-btn');
+                if(newNextStepBtn) newNextStepBtn.addEventListener('click', handleNextStep);
+                const newSaveMemoryBtn = document.getElementById('save-memory-btn');
+                if (newSaveMemoryBtn) { // Re-attach save memory listener
+                     newSaveMemoryBtn.addEventListener('click', () => {
+                        if (!newMemoryData.userName || !newMemoryData.memoryTitle || !newMemoryData.memoryDescription) {
+                             showMessage("Incomplete Echo", "Lumin needs a Name, Title, and Description for your echo. Please review.");
+                             return;
+                        }
+                        const newEchoNode = document.createElement('div');
+                        const sizes = ['small', 'medium', 'large'];
+                        const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
+                        newEchoNode.className = `echo-node ${randomSize} group absolute p-2 cursor-pointer hover:scale-110 pointer-events-auto`;
+                        
+                        const top = Math.random() * 70 + 15; 
+                        const left = Math.random() * 70 + 15;
+                        newEchoNode.style.top = `${top}%`;
+                        newEchoNode.style.left = `${left}%`;
+                        
+                        newEchoNode.dataset.title = newMemoryData.memoryTitle;
+                        newEchoNode.dataset.desc = newMemoryData.memoryDescription;
+                        newEchoNode.dataset.contributor = `Shared by: ${newMemoryData.userName} (${newMemoryData.relationship || 'N/A'})`;
+                        newEchoNode.dataset.date = newMemoryData.memoryWhen || new Date().toLocaleDateString();
+                        
+                        let thumbnailContent = '';
+                        if (newMemoryData.memoryMediaType && newMemoryData.memoryMediaType.startsWith('image/')) {
+                            newEchoNode.dataset.type = 'photo'; newEchoNode.dataset.src = newMemoryData.memoryMedia;
+                            thumbnailContent = `<img src="${newMemoryData.memoryMedia}" alt="Echo Thumbnail" class="echo-thumbnail-img">`;
+                        } else if (newMemoryData.memoryMediaType && newMemoryData.memoryMediaType.startsWith('video/')) {
+                            newEchoNode.dataset.type = 'video'; newEchoNode.dataset.src = newMemoryData.memoryMedia;
+                            thumbnailContent = `<i class="fas fa-play text-blue-300 echo-thumbnail-icon"></i>`;
+                        } else if (newMemoryData.memoryMediaType && newMemoryData.memoryMediaType.startsWith('audio/')) {
+                            newEchoNode.dataset.type = 'audio'; newEchoNode.dataset.src = newMemoryData.memoryMedia;
+                            thumbnailContent = `<i class="fas fa-volume-up text-green-300 echo-thumbnail-icon"></i>`;
+                        } else { 
+                            newEchoNode.dataset.type = 'text'; 
+                            newEchoNode.dataset.src = `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(newMemoryData.memoryTitle.substring(0,20))}`; 
+                            const iconClass = newMemoryData.memoryType === 'condolence' ? 'fa-comment-alt' : 'fa-feather-alt'; 
+                            thumbnailContent = `<i class="fas ${iconClass} text-purple-300 echo-thumbnail-icon"></i>`;
+                        }
+                        newEchoNode.innerHTML = `${thumbnailContent}<span class="echo-title">${newMemoryData.memoryTitle}</span>`;
+                        
+                        if(echoConstellationView) echoConstellationView.appendChild(newEchoNode);
+                        setupEchoNodeClickListener(newEchoNode); 
+                        
+                        showMessage("Echo Saved", `Thank you, ${newMemoryData.userName}. Lumin has carefully preserved your echo: "${newMemoryData.memoryTitle}".`);
+                        if(addMemoryModal) addMemoryModal.classList.add('hidden');
+                    });
+                }
+            }
+             if (document.getElementById('detailed-profile-view') && !document.getElementById('back-to-hoowoz-btn')) {
+                document.getElementById('detailed-profile-view').innerHTML = `
+                    <button id="back-to-hoowoz-btn" class="px-5 py-2 bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors flex items-center space-x-2">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back to Hoowoz</span>
+                    </button>
+                    <div id="detailed-profile-content">
+                        <img id="detailed-view-large-portrait" src="https://placehold.co/200x200/a7d9e7/1E3A8A?text=H" alt="Hoowoz - Large Portrait" class="large-portrait">
+                        <h2 id="detailed-view-name">Hoowoz</h2>
+                        <p id="detailed-view-dates" class="text-lg text-gray-500 mb-4">1950 - 2024</p>
+                        <p id="detailed-view-bio" class="profile-bio">
+                            This is an expanded biography for Hoowoz...
+                        </p>
+                        <div class="detailed-timeline-container">
+                            <h3>Life's Journey</h3>
+                            <div id="detailed-timeline-items"></div>
+                        </div>
+                    </div>`;
+                const newBackToHoowozBtn = document.getElementById('back-to-hoowoz-btn');
+                if(newBackToHoowozBtn && mainContentArea && detailedProfileView) {
+                    newBackToHoowozBtn.addEventListener('click', () => {
+                         if(detailedProfileView) detailedProfileView.style.display = 'none'; 
+                        if(mainContentArea) mainContentArea.style.display = 'flex'; 
+                        if(centralPortraitFrame) {
+                            centralPortraitFrame.style.display = 'flex';
+                            centralPortraitFrame.classList.remove('is-minimal');
+                            if(cardViewToggleBtn) { // Corrected variable name
+                               const icon = cardViewToggleBtn.querySelector('i');
+                               icon.classList.remove('fa-expand'); // Or fa-chevron-up
+                               icon.classList.add('fa-chevron-down');
+                               cardViewToggleBtn.title = "Minimize Card";
+                            }
+                        }
+                        currentCentralCardState = 'short';
+                        setActiveSidebarView(viewConstellationBtn, echoConstellationView); 
+                        window.scrollTo(0, 0); 
+                    });
+                }
+            }
+            if (document.getElementById('message-modal') && !document.getElementById('message-modal-title')) {
+                document.getElementById('message-modal').innerHTML = `
+                    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
+                        <h3 id="message-modal-title" class="text-xl font-semibold mb-3">Message</h3>
+                        <p id="message-modal-text" class="text-gray-700 mb-4"></p>
+                        <button id="message-modal-close" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Close</button>
+                    </div>`;
+                const newMsgModalClose = document.getElementById('message-modal-close');
+                if(newMsgModalClose && messageModal) newMsgModalClose.addEventListener('click', () => messageModal.classList.add('hidden'));
+            }
+
+
+        });
+    </script>
+</body>
+</html>
